@@ -1,0 +1,14 @@
+#!/bin/bash
+if [ "$EUID" -ne "0" ]; then
+	echo "Must be run as superuser"
+	exit 1
+fi
+echo "Searching for compiled binaries..."
+ls | while read file
+do
+	if echo "$(file "$file")" | grep -qi "ELF 64-bit LSB pie executable" ; then
+		echo "Installing $file..."
+		cp "$file" /usr/local/bin
+		echo "Done"
+	fi
+done
