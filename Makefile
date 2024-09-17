@@ -11,7 +11,7 @@ battery-display : battery-display.o
 battery-display.o : src/battery-display.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/battery-display.c
 digital-clock : digital-clock.o
-	gcc -o `pkg-config --cflags --libs gtk4` digital-clock.o
+	gcc -o digital-clock `pkg-config --cflags --libs gtk4` digital-clock.o
 digital-clock.o : src/digital-clock.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/digital-clock.c
 
