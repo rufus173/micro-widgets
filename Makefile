@@ -1,4 +1,4 @@
-all : battery-display shutdown-menu
+all : battery-display shutdown-menu digital-clock
 	@echo "All widgets compiled"
 install : FORCE
 	@./install
