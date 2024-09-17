@@ -1,6 +1,6 @@
 all : battery-display shutdown-menu
 	@echo "All widgets compiled"
-install : README.md
+install : FORCE
 	@./install
 shutdown-menu : shutdown-menu.o
 	gcc shutdown-menu.o -o shutdown-menu `pkg-config --cflags --libs gtk4` 
@@ -14,4 +14,4 @@ digital-clock : digital-clock.o
 	gcc -o digital-clock `pkg-config --cflags --libs gtk4` digital-clock.o
 digital-clock.o : src/digital-clock.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/digital-clock.c
-
+FORCE:
