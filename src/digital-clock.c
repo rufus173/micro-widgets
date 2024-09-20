@@ -32,16 +32,17 @@ int create_window(GtkApplication *app,gpointer user_data){
 	gtk_widget_set_valign(box,GTK_ALIGN_CENTER);
 
 	//make the labels
-	struct label_container label_container;
+	static struct label_container label_container;
+	/*^^^^ dont get cleaned up after function completion*/
 	label_container.date_label = gtk_label_new("Getting date...");
 	label_container.time_label = gtk_label_new("Getting time...");
 	
 	//fill box
-	gtk_box_append(GTK_BOX(box), label_container.date_label);
 	gtk_box_append(GTK_BOX(box), label_container.time_label);
+	gtk_box_append(GTK_BOX(box), label_container.date_label);
 	
 	//set up timer
-	g_timeout_add(1000,update_loop,&label_container);
+	g_timeout_add(500,update_loop,&label_container);
 
 	//present the window
 	gtk_window_present(GTK_WINDOW(window));
@@ -57,10 +58,17 @@ int main(int argc, char **argv){
 	return 0;
 }
 int update_loop(gpointer user_data){
-	struct label_container *label_container;
-	label_container = user_data;
-	gchar *text = g_strdup_printf("%s",get_string_date);
-	gtk_label_set_label(GTK_LABEL(label_container->date_label),text);
+	//retreive data
+	struct label_container *label_container = user_data;
+	GtkLabel *date_label = GTK_LABEL(label_container->date_label);
+	GtkLabel *time_label = GTK_LABEL(label_container->time_label);
+
+	//set labels
+	gchar *text = g_strdup_printf("%s",get_string_date());
+	gtk_label_set_label(time_label,text);
+	g_free(text);
+	text = g_strdup_printf("%s",get_string_time());
+	gtk_label_set_label(date_label,text);
 	g_free(text);
 	return G_SOURCE_CONTINUE;
 }
