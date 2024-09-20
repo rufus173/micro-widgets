@@ -1,3 +1,9 @@
+# vim
+*.swp
+
+# qmake
+*.stash
+
 # Prerequisites
 *.d
 
