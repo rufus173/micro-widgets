@@ -14,4 +14,7 @@ digital-clock : digital-clock.o
 	gcc -o `pkg-config --cflags --libs gtk4` digital-clock.o
 digital-clock.o : src/digital-clock.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/digital-clock.c
-
+quick-launcher : quick-launcher.o
+	gcc -o quick-launcher quick-launcher.o
+quick-launcher.o : src/quick-launcher.cpp
+	gcc -c src/quick-launcher.cpp
