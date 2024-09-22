@@ -3,7 +3,11 @@
 #include <QGridLayout>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <stdlib.h>
+
+#define MAX_CHILD_PROCESSES 10
 
 class Debug_class{
 	private:
@@ -65,6 +69,11 @@ public:
 		return program_storage.program_info.app_launch_command[index];
 	}
 };
+struct child_processes_struct{
+	int count = 0;
+	pid_t pid[MAX_CHILD_PROCESSES];
+};
+struct child_processes_struct child_processes;
 
 static Debug_class debug("main");
 static Programs *programs = new Programs();
@@ -89,7 +98,6 @@ int main(int argc, char **argv){
 
 	//proceduraly generate buttons for each app
 	for (int i = 0; i < programs->count(); i++){
-		printf("%d\n",i);
 
 		//set up all the buttons
 		launch_button_storage[i] = new QPushButton((const char *)programs->get_display_name(i),window);
@@ -109,6 +117,10 @@ int main(int argc, char **argv){
 	
 	//cleanup
 	delete programs;
+	//wait for child processes to finnish
+	for (int i = 0; i < child_processes.count; i++){
+		wait(NULL);
+	}
 	return status;
 }
 int load_programs(){
@@ -120,4 +132,31 @@ int load_programs(){
 }
 void launch_button_pressed(int index){
 	debug << (const char *)programs->get_launch_command(index);
+
+	//max 10 processes
+	if (child_processes.count == 10){
+		debug < "Max 10 processes at one time";
+		return;
+	}
+
+	//start another process to manage
+	pid_t pid = fork();
+	if (pid < 0){
+		debug < "error occured when trying to fork";
+		perror("fork");
+		return;
+	}
+	child_processes.pid[child_processes.count] = pid;
+	child_processes.count++;
+	if (pid == 0){
+		//child process
+		int result = system((const char*)programs->get_launch_command(index));
+		if (result < 0){
+			exit(EXIT_FAILURE);
+		}
+		exit(EXIT_SUCCESS);
+
+	}else{
+		//parent process
+	}
 }
