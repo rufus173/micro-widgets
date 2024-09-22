@@ -50,6 +50,9 @@ public:
 		program_storage.program_count += 1;
 		program_storage.program_info.app_name[program_storage.program_count-1] = (char *)malloc(sizeof(char)*(strlen(display_name)+1));
 		strncpy(program_storage.program_info.app_name[program_storage.program_count-1],display_name,strlen(display_name)+1);
+
+		program_storage.program_info.app_launch_command[program_storage.program_count-1] = (char *)malloc(sizeof(char)*(strlen(executable_location)+1));
+		strncpy(program_storage.program_info.app_launch_command[program_storage.program_count-1],executable_location,strlen(executable_location)+1);
 		return status;
 	}
 	int count(){
@@ -58,13 +61,15 @@ public:
 	char *get_display_name(int index){
 		return program_storage.program_info.app_name[index];
 	}
+	char *get_launch_command(int index){
+		return program_storage.program_info.app_launch_command[index];
+	}
 };
 
 static Debug_class debug("main");
 static Programs *programs = new Programs();
 
-void app_1();
-void app_2();
+void launch_button_pressed(int index);
 int load_programs();
 
 int main(int argc, char **argv){
@@ -84,9 +89,15 @@ int main(int argc, char **argv){
 
 	//proceduraly generate buttons for each app
 	for (int i = 0; i < programs->count(); i++){
+		printf("%d\n",i);
 
 		//set up all the buttons
 		launch_button_storage[i] = new QPushButton((const char *)programs->get_display_name(i),window);
+		QObject::connect(launch_button_storage[i],&QPushButton::clicked,
+			[i](){//capture i by value
+				launch_button_pressed(i);
+			}
+		);
 
 		//add everything to a grid
 		grid->addWidget(launch_button_storage[i],0,i,1,1);
@@ -103,12 +114,10 @@ int main(int argc, char **argv){
 int load_programs(){
 	int status = 0;
 	programs->add("firefox","/usr/bin/firefox");
+	programs->add("xterm","/usr/bin/xterm");
 	printf("loaded %d programs\n",programs->count());
 	return status;
 }
-void app_1(){
-	debug << "i am alive";
-}
-void app_2(){
-	debug < "i am dead";
+void launch_button_pressed(int index){
+	debug << (const char *)programs->get_launch_command(index);
 }
