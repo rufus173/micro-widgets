@@ -90,6 +90,7 @@ int main(int argc, char **argv){
 	//set up the main app and window
 	QApplication app = QApplication(argc,argv);
 	QWidget *window = new QWidget();
+	window->setWindowTitle("quick launcher");
 	
 	//setup grid
 	QGridLayout *grid = new QGridLayout(window);
