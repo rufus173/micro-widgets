@@ -2,12 +2,14 @@
 #include <QPushButton>
 #include <QGridLayout>
 #include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
 
-class debug_class{
+class Debug_class{
 	private:
 		char function_name[1024] = "main";
 	public:
-		debug_class(const char *name){
+		Debug_class(const char *name){
 			snprintf(function_name,1024,"%s",name);
 		}
 		void write_stderr(char *function_name, char *buffer){
@@ -23,7 +25,7 @@ class debug_class{
 			write_stderr(function_name, (char *)buffer);
 		}
 };
-class programs{
+class Programs{
 private:
 	struct program_info{
 		char **app_name;
@@ -35,35 +37,73 @@ private:
 	};
 	struct program_storage program_storage;
 public:
-	programs(){
+	Programs(){
 		program_storage.program_count = 0;
+		program_storage.program_info.app_name = (char**)malloc(sizeof(char*));
+		program_storage.program_info.app_launch_command = (char**)malloc(sizeof(char*));
+	}
+	int add(const char *display_name, const char *executable_location){
+		int status = 0;
+		if (access(executable_location,F_OK) != 0){
+			return -1;
+		}
+		program_storage.program_count += 1;
+		program_storage.program_info.app_name[program_storage.program_count-1] = (char *)malloc(sizeof(char)*(strlen(display_name)+1));
+		strncpy(program_storage.program_info.app_name[program_storage.program_count-1],display_name,strlen(display_name)+1);
+		return status;
+	}
+	int count(){
+		return program_storage.program_count;
+	}
+	char *get_display_name(int index){
+		return program_storage.program_info.app_name[index];
 	}
 };
 
-static debug_class debug("main");
+static Debug_class debug("main");
+static Programs *programs = new Programs();
 
 void app_1();
 void app_2();
+int load_programs();
 
 int main(int argc, char **argv){
+	//load up the programs pisplayed in the menu
+	int status = load_programs();
+	if (status != 0) return status;
+
 	//set up the main app and window
 	QApplication app = QApplication(argc,argv);
 	QWidget *window = new QWidget();
-
-	//set up all the buttons
-	QPushButton *app_1_button = new QPushButton("app1",window);
-	QPushButton *app_2_button = new QPushButton("app2",window);
-	QObject::connect(app_1_button,&QPushButton::clicked,app_1);
-	QObject::connect(app_2_button,&QPushButton::clicked,app_2);
-
-	//add everything to a grid
+	
+	//setup grid
 	QGridLayout *grid = new QGridLayout(window);
-	grid->addWidget(app_1_button,0,0,1,1);
-	grid->addWidget(app_2_button,0,1,1,1);
+
+	//setup widget storage
+	QPushButton **launch_button_storage = (QPushButton**)malloc(sizeof(QPushButton*)*programs->count());
+
+	//proceduraly generate buttons for each app
+	for (int i = 0; i < programs->count(); i++){
+
+		//set up all the buttons
+		launch_button_storage[i] = new QPushButton((const char *)programs->get_display_name(i),window);
+
+		//add everything to a grid
+		grid->addWidget(launch_button_storage[i],0,i,1,1);
+	}
 
 	//present to user
 	window->show();
-	int status = app.exec();
+	status = app.exec();
+	
+	//cleanup
+	delete programs;
+	return status;
+}
+int load_programs(){
+	int status = 0;
+	programs->add("firefox","/usr/bin/firefox");
+	printf("loaded %d programs\n",programs->count());
 	return status;
 }
 void app_1(){
