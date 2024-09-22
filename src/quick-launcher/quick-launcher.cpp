@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QPushButton>
 #include <QGridLayout>
+#include <QTimer>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -73,7 +74,7 @@ struct child_processes_struct{
 	int count = 0;
 	pid_t pid[MAX_CHILD_PROCESSES];
 };
-struct child_processes_struct child_processes;
+volatile struct child_processes_struct child_processes;
 
 static Debug_class debug("main");
 static Programs *programs = new Programs();
@@ -111,6 +112,23 @@ int main(int argc, char **argv){
 		grid->addWidget(launch_button_storage[i],0,i,1,1);
 	}
 
+	//setup a mainloop to wait for finnished child processes
+	QTimer *timer = new QTimer();
+	QObject::connect(timer, &QTimer::timeout, []{
+			for (int i = 0; i < child_processes.count; i++){
+				int status = waitpid(child_processes.pid[i],NULL,WNOHANG);//dont hang if no children are finnished
+				if (status > 0){
+					debug << "collected process";
+					child_processes.pid[i] = child_processes.pid[child_processes.count-1];
+					child_processes.count--;
+					printf("collected: %d,remaining processes: %d\n",child_processes.pid[i],child_processes.count);
+					break;// we changed the struct size so dont keep itterating
+				}
+
+			}
+		});
+	timer->start(500);
+
 	//present to user
 	window->show();
 	status = app.exec();
@@ -119,7 +137,15 @@ int main(int argc, char **argv){
 	delete programs;
 	//wait for child processes to finnish
 	for (int i = 0; i < child_processes.count; i++){
-		wait(NULL);
+		char output_buffer[1024];
+		snprintf(output_buffer,1024,"waiting on %d, %d processes remaining",child_processes.pid[i],child_processes.count-i);
+		debug << (const char*)output_buffer;
+		int status = waitpid(child_processes.pid[child_processes.count],NULL,0);
+		//printf("wait returned %d\n",status);
+		if (status < 0){
+			debug < "could not wait for process";
+			perror("waitpid");
+		}
 	}
 	return status;
 }
@@ -127,7 +153,9 @@ int load_programs(){
 	int status = 0;
 	programs->add("firefox","/usr/bin/firefox");
 	programs->add("xterm","/usr/bin/xterm");
-	printf("loaded %d programs\n",programs->count());
+	char output_buffer[1024];
+	snprintf(output_buffer,1024,"loaded %d programs",programs->count());
+	debug << (const char *)output_buffer;
 	return status;
 }
 void launch_button_pressed(int index){
