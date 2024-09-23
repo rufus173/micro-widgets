@@ -18,10 +18,12 @@ char *get_string_time();
 void update_time_struct();
 int update_loop(gpointer user_data);
 int create_window(GtkApplication *app,gpointer user_data){
-
+	
 	//create window
 	GtkWidget *window;
 	window = gtk_application_window_new(app);
+	gtk_window_set_default_size(GTK_WINDOW(window),100,70);
+	gtk_window_set_title(GTK_WINDOW(window),"Clock");
 	
 	//create a box to put widgets in
 	GtkWidget *box;
@@ -49,6 +51,7 @@ int create_window(GtkApplication *app,gpointer user_data){
 }
 int main(int argc, char **argv){
 	printf("date: %s, time: %s\n",get_string_date(),get_string_time());
+	
 	//setup the gtk app
 	GtkApplication *app;
 	app = gtk_application_new("com.github.rufus173.DigitalClock",G_APPLICATION_DEFAULT_FLAGS);
