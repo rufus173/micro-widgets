@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 	snprintf(buffer,1024,"Screen size %dx%d",screen_info.width,screen_info.height);
 	debug << (const char *)buffer;
 	//set window size
-	bar_dimentions.height = 50;
+	bar_dimentions.height = 70;
 	bar_dimentions.width = screen_info.width;
 	bar_dimentions.x = 0;
 	bar_dimentions.y = screen_info.height-bar_dimentions.height;

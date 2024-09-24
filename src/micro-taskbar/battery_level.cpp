@@ -27,7 +27,8 @@ void build_battery_level(QGridLayout *master_grid,int column){
 	battery_percent_bar->setOrientation(Qt::Vertical);
 	battery_percent_bar->setAlignment(Qt::AlignLeft);
 	battery_percent_bar->setFormat("%p%");
-	battery_percent_bar->setFixedWidth(40);
+	battery_percent_bar->setFixedWidth(50);
+	battery_percent_bar->setFixedHeight(50);
 
 	//create update loop
 	QTimer *battery_level_update_timer = new QTimer();
