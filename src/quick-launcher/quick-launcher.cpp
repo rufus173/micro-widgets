@@ -49,9 +49,6 @@ public:
 	}
 	int add(const char *display_name, const char *executable_location){
 		int status = 0;
-		if (access(executable_location,F_OK) != 0){
-			return -1;
-		}
 		program_storage.program_count += 1;
 		program_storage.program_info.app_name[program_storage.program_count-1] = (char *)malloc(sizeof(char)*(strlen(display_name)+1));
 		strncpy(program_storage.program_info.app_name[program_storage.program_count-1],display_name,strlen(display_name)+1);
@@ -152,6 +149,7 @@ int main(int argc, char **argv){
 }
 int load_programs(){
 	int status = 0;
+	programs->add("discord","/usr/bin/flatpak run com.discordapp.Discord");
 	programs->add("firefox","/usr/bin/firefox");
 	programs->add("xterm","/usr/bin/xterm");
 	char output_buffer[1024];
