@@ -1,5 +1,7 @@
 //standard headers
 #include <stdio.h>
+#include <pwd.h>
+#include <unistd.h>
 
 //my headers
 #include "debug.h"
@@ -9,6 +11,7 @@
 //qt headers
 #include <QApplication>
 #include <QScreen>
+#include <QFile>
 #include <QGridLayout>
 #include <QPushButton>
 #include <QTimer>
@@ -25,12 +28,33 @@ int main(int argc, char **argv){
 	//variable definitions
 	int status = 0;
 	char buffer[1024];
+	char config_directory[1024];
+	char *user_home = getenv("HOME");
+	char style_sheet_file_path[1024];
 	struct bar_dimentions bar_dimentions;
 	struct screen_info screen_info;
+	if (user_home == NULL){
+		debug < "could not get $HOME, resorting to getpwuid";
+		user_home = getpwuid(getuid())->pw_dir;
+	}
+	int result = snprintf(config_directory,1024,"%s/.config/micro-taskbar",user_home);
+	result = snprintf(style_sheet_file_path,1024,"%s/style.qss",config_directory);
+	if (result < 0){
+		debug < "style sheet path to long";
+	}
 	
 	QApplication app(argc,argv);
 	QWidget *window = new QWidget();
 	window->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);//make window frameless
+	//set style sheet
+	if (access(style_sheet_file_path,R_OK) == 0){
+		QFile style_sheet_file(style_sheet_file_path);
+		style_sheet_file.open(QFile::ReadOnly);
+		app.setStyleSheet(style_sheet_file.readAll());
+	}else{
+		debug < "could not access style sheet";
+	}
+
 	//get screen info
 	QScreen *screen = QGuiApplication::primaryScreen();
 	screen_info.height = screen->geometry().height();
