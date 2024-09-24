@@ -1,5 +1,6 @@
-#ifndef DIGITAL_CLOCK_H
-#define DIGITAL_CLOCK_H
+#ifndef MODULES_H
+#define MODULES_H
 #include <QGridLayout>
 void build_digital_clock(QGridLayout *grid,int column);
+void build_battery_level(QGridLayout *grid,int column);
 #endif

@@ -4,7 +4,7 @@
 //my headers
 #include "debug.h"
 #include "config.h"
-#include "digital_clock.h"
+#include "modules.h"
 
 //qt headers
 #include <QApplication>
@@ -48,6 +48,7 @@ int main(int argc, char **argv){
 	// main grid[[widget a grid],[widget b grid],[widget c grid]]
 	QGridLayout *grid = build_grid(window);
 	build_digital_clock(grid,0/*column 0*/);
+	build_battery_level(grid,1);
 
 	window->show();
 	status = app.exec();
