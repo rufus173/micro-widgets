@@ -19,8 +19,11 @@ void build_digital_clock(QGridLayout *master_grid, int column){
 	debug << "building clock";
 	//creating widgets
 	QGridLayout *widget_grid = new QGridLayout();
+	widget_grid->setAlignment(Qt::AlignLeft);
 	QLabel *date = new QLabel("date");
 	QLabel *time = new QLabel("time");
+	//date->setFixedWidth(100);
+	//time->setFixedWidth(100);
 
 	//stack them all neatly
 	widget_grid->addWidget(date,0,0,1,1);

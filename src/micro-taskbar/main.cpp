@@ -47,8 +47,8 @@ int main(int argc, char **argv){
 	//build the taskbar
 	// main grid[[widget a grid],[widget b grid],[widget c grid]]
 	QGridLayout *grid = build_grid(window);
-	build_digital_clock(grid,0/*column 0*/);
-	build_battery_level(grid,1);
+	build_battery_level(grid,0);
+	build_digital_clock(grid,1/*column 1*/);
 
 	window->show();
 	status = app.exec();

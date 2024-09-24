@@ -13,7 +13,7 @@ class debug_class {
 		if (debug_enabled) printf("DEBUG in file [%s]: %s\n",file,buffer);
 	}
 	void operator<(const char *buffer){
-		if (debug_enabled) printf("ERROR in file [%s]: %s\n",file,buffer);
+		if (debug_enabled) fprintf(stderr,"ERROR in file [%s]: %s\n",file,buffer);
 	}
 };
 #endif
