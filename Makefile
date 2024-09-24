@@ -16,4 +16,6 @@ digital-clock.o : src/digital-clock.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/digital-clock.c
 quick-launcher : FORCE
 	cd src/quick-launcher/ ; qmake ; make quick-launcher && mv quick-launcher ../..
+micro-taskbar : FORCE
+	cd src/micro-taskbar ; qmake ; make micro-taskbar && mv micro-taskbar ../..
 FORCE:
