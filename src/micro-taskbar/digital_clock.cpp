@@ -16,6 +16,7 @@ static char *date_string();
 static char *time_string();
 
 void build_digital_clock(QGridLayout *master_grid, int column){
+	debug << "building clock";
 	//creating widgets
 	QGridLayout *widget_grid = new QGridLayout();
 	QLabel *date = new QLabel("date");
@@ -33,7 +34,9 @@ void build_digital_clock(QGridLayout *master_grid, int column){
 			date->setText(date_string());
 			time->setText(time_string());
 		});
+	debug << "starting timer";
 	digital_clock_update_timer->start(100);
+	debug << "done";
 }
 static char *date_string(){
 	time_t time_now = time(NULL);
