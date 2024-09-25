@@ -73,6 +73,7 @@ int main(int argc, char **argv){
 	QGridLayout *grid = build_grid(window);
 	build_battery_level(grid,0);
 	build_digital_clock(grid,1/*column 1*/);
+	build_power_button(grid,3);
 
 	window->show();
 	status = app.exec();
