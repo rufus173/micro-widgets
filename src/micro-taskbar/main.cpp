@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <pwd.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <wait.h>
 
 //my headers
 #include "debug.h"
@@ -23,6 +25,18 @@ QGridLayout *build_grid(QWidget *window);
 static class debug_class debug("main");//initialise debug
 
 int main(int argc, char **argv){
+	debug << "starting tray";
+	//app tray
+	pid_t tray_pid = fork();
+	if (tray_pid < 0){
+		debug < "error whilst starting tray";
+		perror("fork");
+		return 1;
+	}
+	
+	//child process (tray)
+	if (tray_pid == 0) return main_tray();
+
 	debug << "Started";
 
 	//variable definitions
@@ -82,6 +96,7 @@ int main(int argc, char **argv){
 
 	debug << "Finnished";
 	//clean up
+	waitpid(tray_pid,NULL,0); //wait for the tray
 	return status;	
 }
 QGridLayout *build_grid(QWidget *window){
