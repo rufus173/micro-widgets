@@ -7,7 +7,7 @@ static debug_class debug = debug_class("quick_launcher");
 
 void build_quick_launcher(QGridLayout *master_grid, int column){
 	debug << "starting quick launcher construction";
-	QGridLayout *widget_grid = QGridLayout();
+	QGridLayout *widget_grid = new QGridLayout();
 
 	//procedural button creation
 	//i cant be bothered rn do this later

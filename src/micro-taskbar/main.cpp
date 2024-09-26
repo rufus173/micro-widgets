@@ -73,7 +73,9 @@ int main(int argc, char **argv){
 	QGridLayout *grid = build_grid(window);
 	build_battery_level(grid,0);
 	build_digital_clock(grid,1/*column 1*/);
-	build_power_button(grid,3);
+	//mid section free to allow expantion of taskbar
+	build_quick_launcher(grid,3);
+	build_power_button(grid,4);
 
 	window->show();
 	status = app.exec();
