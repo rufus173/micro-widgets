@@ -130,13 +130,14 @@ int main_tray(){
 		for (int i = 0; i < proc.count; i++){
 			int status = waitpid(proc.pid[i],NULL,WNOHANG);
 			if (status > 0){
-				printf("cleaned up process %d\n",proc.pid[i]);
+				printf("cleaned up fork with pid %d\n",proc.pid[i]);
 				//remove from list
 				proc.pid[i] = proc.pid[proc.count-1];
 				proc.count--;
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
 			}
 		}
+		sleep(0.2); //dont spam the system
 	}
 	
 	printf("tray terminated.\n");
