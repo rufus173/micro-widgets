@@ -1,7 +1,7 @@
 
 # micro-widgets
 
-small utility widgets built with gtk4
+small utility widgets built with gtk4 and QT
 
 # Requirements
 
@@ -16,3 +16,4 @@ You can use `make <widget>` to make any number of widgets and `make all` to make
 - battery-display (GTK)
 - digital-clock (GTK)
 - quick-launcher (QT)
+- micro-taskbar (QT)
