@@ -8,6 +8,9 @@
 //my headers
 #include "debug.h"
 #include "config.h"
+extern "C" {
+#include "tray.h"
+}
 #include "modules.h"
 
 //qt headers
@@ -25,7 +28,7 @@ QGridLayout *build_grid(QWidget *window);
 static class debug_class debug("main");//initialise debug
 
 int main(int argc, char **argv){
-	debug << "starting tray";
+	debug << "forking tray";
 	//app tray
 	pid_t tray_pid = fork();
 	if (tray_pid < 0){
@@ -37,7 +40,7 @@ int main(int argc, char **argv){
 	//child process (tray)
 	if (tray_pid == 0) return main_tray();
 
-	debug << "Started";
+	debug << "done";
 
 	//variable definitions
 	int status = 0;
