@@ -4,6 +4,9 @@
 #include <QApplication>
 //header me
 #include "debug.h"
+extern "C" {
+#include "tray.h"
+}
 //standard
 #include <stdlib.h>
 
@@ -49,7 +52,7 @@ void build_quick_launcher(QGridLayout *master_grid, int column){
 	//add some apps
 	static class_quick_applications apps = class_quick_applications();
 	apps.add("firefox","/usr/bin/firefox");
-	
+	apps.add("xterm","/usr/bin/xterm");
 
 	//procedural button creation
 	//set up an array
@@ -66,7 +69,7 @@ void build_quick_launcher(QGridLayout *master_grid, int column){
 			char output_buffer[1024];
 			snprintf(output_buffer,1024,"launching %s",executable_location);
 			debug << output_buffer;
-			//system(executable_location);
+			start_program(executable_location);
 		});
 		launch_button_array[i]->setFixedWidth(80);
 		widget_grid->addWidget(launch_button_array[i],0,i,1,1);
