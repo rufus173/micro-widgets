@@ -23,7 +23,7 @@ void build_battery_level(QGridLayout *master_grid,int column){
 	//QLabel *battery_percent_label = new QLabel("Battery 100%");
 	QProgressBar *battery_percent_bar = new QProgressBar();
 	battery_percent_bar->setRange(0,100);
-	battery_percent_bar->setTextVisible(true);
+	//battery_percent_bar->setTextVisible(true);
 	battery_percent_bar->setOrientation(Qt::Vertical);
 	battery_percent_bar->setAlignment(Qt::AlignLeft);
 	battery_percent_bar->setFormat("%p%");
