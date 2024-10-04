@@ -22,6 +22,7 @@ struct processes {
 	char **executable_path;
 };
 int new_process();
+int get_running_program_count();
 static struct tray_response send_tray_command(struct tray_command command);
 
 int main_tray(){
@@ -166,6 +167,18 @@ int start_program(const char *executable_path){
 	snprintf(command.executable_path,1024,"%s",executable_path);
 	struct tray_response response = send_tray_command(command);
 	return response.status;
+}
+int get_running_program_count(){
+	//set up data structures
+	struct tray_command command;
+
+	//prepare data
+	command.opcode = QUERY_RUNNING_COUNT;
+	struct tray_response response = send_tray_command(command);
+	if (response.status < 0){
+		return response.status;
+	}
+	return response.count;
 }
 static struct tray_response send_tray_command(struct tray_command command){
 	struct tray_response response;
