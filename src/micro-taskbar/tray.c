@@ -12,13 +12,17 @@
 
 #define SOCKET_PATH "/tmp/tray.socket"
 #define RUN_EXECUTABLE 1
+#define QUERY_RUNNING_COUNT 2
+#define QUERY_RUNNING_INDEX 3
 #define KILL 0
 
 struct processes {
 	int count;
 	pid_t *pid;
+	char **executable_path;
 };
 int new_process();
+static struct tray_response send_tray_command(struct tray_command command);
 
 int main_tray(){
 	printf("tray starting...\n");
@@ -26,6 +30,7 @@ int main_tray(){
 	struct processes proc;
 	proc.pid = malloc(sizeof(pid_t));
 	proc.count = 0;
+	proc.executable_path = malloc(sizeof(char *));
 
 	//set up socket
 	struct sockaddr_un name;
@@ -108,10 +113,19 @@ int main_tray(){
 						proc.count++;
 						proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
 						proc.pid[proc.count-1] = pid;
+						proc.executable_path = realloc(proc.executable_path, sizeof(char *)*proc.count);
+						proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(request.executable_path)+1));
+						snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",request.executable_path);
 					}
 				}else{
 					response.status = 1;
 				}
+				break;
+			case QUERY_RUNNING_COUNT:
+				response.count = proc.count;
+				response.status = 0;
+				break;
+			case QUERY_RUNNING_INDEX:
 				break;
 		}
 		//return a value to them
@@ -144,7 +158,16 @@ int main_tray(){
 	return 0;
 }
 int start_program(const char *executable_path){
+	//set up data structures
 	struct tray_command command;
+
+	//prepare data
+	command.opcode = RUN_EXECUTABLE;
+	snprintf(command.executable_path,1024,"%s",executable_path);
+	struct tray_response response = send_tray_command(command);
+	return response.status;
+}
+static struct tray_response send_tray_command(struct tray_command command){
 	struct tray_response response;
 	struct sockaddr_un address;
 	memset(&address,0,sizeof(struct sockaddr_un));
@@ -157,35 +180,36 @@ int start_program(const char *executable_path){
 	if (tray < 0){
 		fprintf(stderr,"could not create socket.\n");
 		perror("socket");
-		return -1;
+		response.status = -1;
+		goto end;
 	}
 
 	int result = connect(tray,(struct sockaddr *)&address,sizeof(struct sockaddr_un));
 	if (result < 0){
 		fprintf(stderr,"could not connect to tray.\n");
 		perror("connect");
-		return -1;
+		response.status = -1;
+		goto end;
 	}
 
-	//prepare data
-	command.opcode = RUN_EXECUTABLE;
-	snprintf(command.executable_path,1024,"%s",executable_path);
-	
 	//send data through socket
 	result = write(tray,&command,sizeof(struct tray_command));
 	if (result < 0){
 		fprintf(stderr,"could not write to tray socket.\n");
 		perror("write");
-		return -1;
+		response.status = -1;
+		goto end;
 	}
 	//get response
 	result = read(tray,&response,sizeof(struct tray_response));	
 	if (result < 0){
 		fprintf(stderr,"could not read from tray socket.\n");
 		perror("read");
-		return -1;
+		response.status = -1;
+		goto end;
 	}
 	close(tray);
 
-	return response.status;
+	end:
+	return response;
 }
