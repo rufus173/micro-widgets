@@ -22,7 +22,6 @@ struct processes {
 	char **executable_path;
 };
 int new_process();
-int get_running_program_count();
 static struct tray_response send_tray_command(struct tray_command command);
 
 int main_tray(){

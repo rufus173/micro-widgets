@@ -2,6 +2,7 @@
 #define TRAY_H
 int main_tray();
 int start_program(const char *executable_path);
+int get_running_program_count();
 struct tray_command {
 	int opcode;
 	int index;
