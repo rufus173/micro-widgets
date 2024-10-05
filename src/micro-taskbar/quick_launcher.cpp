@@ -11,6 +11,7 @@ extern "C" {
 }
 //standard
 #include <stdlib.h>
+#include <string.h>
 
 static debug_class debug = debug_class("quick_launcher");
 
@@ -22,15 +23,25 @@ class class_quick_applications {
 		char display_name[10][1024];
 		char executable_location[10][1024];
 	};
-	struct running_applications {
+	struct app {
 		int count = 0;
-		char **executable_path;
+		char *executable_path;
+		char *display_name;
 	};
+	struct tracked_applications {
+		int count = 0;
+		struct app *app;
+	};
+
 	struct applications apps;
-	struct running_applications running_apps;
+	struct tracked_applications tracked_apps;
+	int running_app_count = 0;
 	public:
 	class_quick_applications(){
-		running_apps.executable_path = (char**)malloc(sizeof(char*));
+		tracked_apps.app = (struct app*)malloc(sizeof(struct app));
+	}
+	~class_quick_applications(){
+		free(tracked_apps.app);
 	}
 	void add(const char *display_name, const char *executable_location){
 		apps.count++;
@@ -39,6 +50,14 @@ class class_quick_applications {
 			apps.count--;//reset to original value
 			return;
 		}
+		//add it to the tracked apps struct for later
+		tracked_apps.count++;
+		tracked_apps.app = (struct app*)realloc(tracked_apps.app,sizeof(struct app)*tracked_apps.count);
+		tracked_apps.app[tracked_apps.count-1].count = 0;
+		tracked_apps.app[tracked_apps.count-1].display_name = (char*)malloc(sizeof(char)*(strlen(display_name)+1));
+		tracked_apps.app[tracked_apps.count-1].executable_path = (char*)malloc(sizeof(char)*(strlen(executable_location)+1));
+		memcpy(tracked_apps.app[tracked_apps.count-1].display_name,display_name,strlen(display_name)+1);
+		memcpy(tracked_apps.app[tracked_apps.count-1].executable_path,executable_location,strlen(executable_location)+1);
 
 		//copy over strings
 		int result;
@@ -53,9 +72,24 @@ class class_quick_applications {
 	
 	//tray interactions
 	void update_running(){
-		running_apps.count = get_running_program_count();
+		running_app_count = get_running_program_count();
+		struct running_processes procs;
+		get_running_processes(&procs);
+		//find the matching app struct and increment its count counter
+		for (int x = 0; x < tracked_apps.count; x++){
+			tracked_apps.app[x].count = 0;
+			for (int i = 0; i < procs.count; i++){
+				if (strcmp(tracked_apps.app[x].executable_path,procs.executable_path[i]) == 0){
+					tracked_apps.app[x].count++;
+				}
+			}
+		}
+		free_running_processes_struct(&procs);
 	}
-	int running_count(){return running_apps.count;}
+	int running_app_get_count(int index){
+		return tracked_apps.app[index].count;
+	}
+	int running_count(){return running_app_count;}
 };
 
 void build_quick_launcher(QGridLayout *master_grid, int column){
@@ -71,6 +105,7 @@ void build_quick_launcher(QGridLayout *master_grid, int column){
 	//set up an array
 	QPushButton *launch_button_array[10]; //max 10 buttons (i cant be bothered to dynamicaly allocate and deallocate)
 	QLabel *status_label_array[10]; //displays how many of each app is open
+	QTimer *status_label_update_loop_array[10];
 	int i;
 	for (i = 0; i < apps.count(); i++){
 		char output_buffer[1024];
@@ -93,6 +128,15 @@ void build_quick_launcher(QGridLayout *master_grid, int column){
 		status_label_array[i] = new QLabel("0");
 		status_label_array[i]->setAlignment(Qt::AlignHCenter | Qt::AlignBottom);
 		widget_grid->addWidget(status_label_array[i],0,i,1,1);
+
+		//status label update loop
+		status_label_update_loop_array[i] = new QTimer();
+		QObject::connect(status_label_update_loop_array[i],&QTimer::timeout,[i,status_label_array]{
+			char buffer[1024];
+			snprintf(buffer,1024,"%d",apps.running_app_get_count(i));
+			status_label_array[i]->setText(buffer);
+		});
+		status_label_update_loop_array[i]->start(500);
 	}
 
 	//create the label for total programs open
