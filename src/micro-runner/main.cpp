@@ -22,8 +22,11 @@ debug_class debug = debug_class("main");
 int active_display_height;
 int active_display_width;
 int left_x_when_centred;
+char *command = NULL;
 
 void move_window_step(QTimer *move_loop,QWidget *window);
+void enter_pressed(QLineEdit *entry, QWidget *window);
+
 int main(int argc, char **argv){
 	debug << "starting";
 	//create the app
@@ -49,14 +52,31 @@ int main(int argc, char **argv){
 	move_loop->start(10);
 
 	//link enter key to respective function
+	QObject::connect(entry,&QLineEdit::returnPressed,[=]{enter_pressed(entry,main_window);});
 
 	//display everything
 	debug << "running app.\n";
 	main_window->show();
-	return app.exec();
+	int window_return = app.exec();
+	if (window_return != 0){
+		debug < "window failed";
+		return window_return;
+	}
+	debug << "window closed";
+	if (command == NULL){
+		debug << "no command given";
+		return 0;
+	}
+	printf("%s\n", command);
 }
-void enter_pressed(QWidget *entry){
-	;
+void enter_pressed(QLineEdit *entry, QWidget *window){
+	if (entry->text().isEmpty() != true){
+		static QByteArray byte_array = entry->text().toLatin1();
+		command = byte_array.data();
+	}else{
+		command = NULL;
+	}
+	window->close();
 }
 void move_window_step(QTimer *move_loop,QWidget *window){
 	//the point when it slows down
