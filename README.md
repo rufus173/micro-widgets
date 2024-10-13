@@ -17,3 +17,4 @@ You can use `make <widget>` to make any number of widgets and `make all` to make
 - digital-clock (GTK)
 - quick-launcher (QT)
 - micro-taskbar (QT)
+- micro-runner (QT)
