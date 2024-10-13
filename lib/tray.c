@@ -52,11 +52,13 @@ static int connect_tray_socket();
 static int serve_requests(int socket); //0 on success 1 on stop signal
 static int perform_handshake(int sock, enum opcodes opcode);
 
+//globals
+static struct processes proc;
+
 //------------------------ public functions ----------------------
 int main_tray(){
 	printf("tray starting...\n");
 	//set up memory
-	struct processes proc;
 	proc.pid = malloc(sizeof(pid_t));
 	proc.count = 0;
 	proc.executable_path = malloc(sizeof(char *));
@@ -162,13 +164,22 @@ int start_program(const char *executable_path){
 		return -1;
 	}
 
-	//set up data structures
+	//send size of command string
+	size_t executable_path_length = strlen(executable_path)+1;
+	result = write(tray,&executable_path_length,sizeof(size_t));
+	if (result < 0){
+		fprintf(stderr,"could not send executable_path_length.\n");
+		perror("write");
+	}
 
-	//prepare data
-	command.opcode = RUN_EXECUTABLE;
-	snprintf(command.executable_path,1024,"%s",executable_path);
-	struct tray_response response = send_tray_command(command);
-	return response.status;
+	//send command string
+	write(tray,executable_path,executable_path_length);
+	if (result < 0){
+		fprintf(stderr,"could not send executable_path");
+		perror("write");
+	}
+	
+	return 0;
 }
 int get_running_program_count(){
 	//set up data structures
@@ -360,12 +371,27 @@ static int serve_requests(int client){
 		case KILL: //kill the tray
 			respond_handshake(client,OK);
 			return 1;
-		case RUN_EXECUTABLE: //run executable
-			//go fork yourself
+		case RUN_EXECUTABLE:
+			//get the command to run
+			size_t command_size;
+			int result = read(client,&command_size,sizeof(size_t));
+			if (result < 0){
+				fprintf(stderr,"could not read size of command.\n");
+				perror("read");
+				goto client_cleanup;
+			}
+			char *command = malloc(command_size);
+			result = read(client, &command, command_size);
+			if (result < 0){
+				fprintf("could not read command.\n");
+				perror("read");
+			}
+
+			//fork
 			pid_t pid = fork();
 			if (pid < 0) perror("fork");
 			if (pid == 0){
-				response.status = system(request.executable_path);
+				response.status = system(command);
 			}else{
 				proc.count++;
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
@@ -374,6 +400,8 @@ static int serve_requests(int client){
 				proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(request.executable_path)+1));
 				snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",request.executable_path);
 			}
+			//clean
+			free(command);
 			break;
 		case QUERY_RUNNING_COUNT:
 			response.count = proc.count;
