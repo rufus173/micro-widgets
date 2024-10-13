@@ -102,6 +102,7 @@ int main_tray(){
 	result = listen(socket_fd, 10);
 	// -------------------- mainloop --------------
 	int serving_requests = 1;
+	int stop = 0;
 	for (;;){//mainloop
 		int client;
 		if (serving_requests){// 
@@ -119,7 +120,7 @@ int main_tray(){
 			}
 		}
 		// ------------ serve requests ---------
-		int stop = serve_requests(client);
+		stop = serve_requests(client);
 		if (stop){ //stop serving requests
 			serving_requests = 0;
 		}
@@ -173,7 +174,7 @@ int start_program(const char *executable_path){
 	}
 
 	//send command string
-	write(tray,executable_path,executable_path_length);
+	result = write(tray,executable_path,executable_path_length);
 	if (result < 0){
 		fprintf(stderr,"could not send executable_path");
 		perror("write");
@@ -249,7 +250,7 @@ int get_running_processes(struct running_processes *proc){
 		proc->executable_path[i] = (char*)malloc(sizeof(char)*buffer_size);
 
 		//get string
-		result = read(tray,&executable_path[i],sizeof(char)*buffer_size);
+		result = read(tray,proc->executable_path[i],sizeof(char)*buffer_size);
 		if (result < 0){
 			status = -1;
 			fprintf(stderr,"could not read string.\n");
@@ -275,24 +276,10 @@ int check_tray_status(){
 	if (tray < 0){
 		return -1;
 	}
-
-	//check everything is ok
-	struct tray_command command;
-	struct tray_response response;
-	command.opcode = QUERY_RUNNING_COUNT;
-	int result = write(tray,&command,sizeof(struct tray_command));
+	int result = perform_handshake(tray,NONE);
 	if (result < 0){
 		return -1;
-		perror("write");
 	}
-	result = read(tray, &response, sizeof(struct tray_response));
-	if (result < 0){
-		return -1;
-		perror("read");
-	}
-	
-	//clean and return
-	close(tray);
 	return 0;
 }
 //---------------------- private functions ------------------
@@ -349,6 +336,7 @@ static int perform_handshake(int sock, enum opcodes opcode){
 		case OK:
 			return 0;
 	}
+	return 1;
 }
 static int respond_handshake(int sock,enum return_code status){
 	struct handshake_response response;
@@ -368,7 +356,7 @@ static int serve_requests(int client){
 	memset(&request,0,sizeof(struct handshake));
 	request.opcode = NONE; //set a default if no opcode set
 	
-	result = read(client, &request, sizeof(request));
+	int result = read(client, &request, sizeof(struct handshake));
 	if (result < 0){
 		fprintf(stderr,"tray: could not read from socket.\n");
 		perror("read");
@@ -376,12 +364,9 @@ static int serve_requests(int client){
 	}
 	//client version compatibility
 	if (request.version != TRAY_VERSION){
-		respond_handshake(tray,BAD_VERSION);
+		respond_handshake(client,BAD_VERSION);
 	}
 
-	struct tray_response response;
-	memset(&response,0,sizeof(struct tray_response));
-	response.status = 0;
 	switch (request.opcode){
 		case NONE: //send an ok and do nothing
 			respond_handshake(client,BAD_VERSION);
@@ -401,7 +386,7 @@ static int serve_requests(int client){
 			char *command = malloc(command_size);
 			result = read(client, &command, command_size);
 			if (result < 0){
-				fprintf("could not read command.\n");
+				fprintf(stderr,"could not read command.\n");
 				perror("read");
 			}
 
@@ -409,28 +394,31 @@ static int serve_requests(int client){
 			pid_t pid = fork();
 			if (pid < 0) perror("fork");
 			if (pid == 0){
-				response.status = system(command);
+				result = system(command);
 			}else{
 				proc.count++;
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
 				proc.pid[proc.count-1] = pid;
 				proc.executable_path = realloc(proc.executable_path, sizeof(char *)*proc.count);
-				proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(command)+1));
-				snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",command);
+				proc.executable_path[proc.count-1] = malloc(sizeof(char) * command_size);
+				snprintf(proc.executable_path[proc.count-1],command_size,"%s",command);
 			}
 			//clean
 			free(command);
 			break;
 		case GET_PROCESS_COUNT:
-			response.count = proc.count;
-			response.status = 0;
+			result = write(client,&proc.count,sizeof(int));
+			if (result < 0){
+				fprintf(stderr,"could not send process count.\n");
+				perror("write");
+			}
 			break;
 		case GET_PROCESSES:
-			count = proc.count;
+			int count = proc.count;
 			result = write(client,&count,sizeof(int));
 			for (int i = 0; i < proc.count; i++){ //transmit all the strings
 				size_t buffer_size = strlen(proc.executable_path[i])+1;
-				result = write(client,&buffer,sizeof(size_t));
+				result = write(client,&buffer_size,sizeof(size_t));
 				if (result < 0){
 					fprintf(stderr,"could not write the string length.\n");
 					perror("write");
@@ -448,4 +436,5 @@ static int serve_requests(int client){
 
 	client_cleanup:
 	close(client);
+	return 0;
 }
