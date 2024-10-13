@@ -182,16 +182,28 @@ int start_program(const char *executable_path){
 	return 0;
 }
 int get_running_program_count(){
-	//set up data structures
-	struct tray_command command;
-
-	//prepare data
-	command.opcode = QUERY_RUNNING_COUNT;
-	struct tray_response response = send_tray_command(command);
-	if (response.status < 0){
-		return response.status;
+	//handshake
+	int tray = connect_tray_socket();
+	if (tray < 0){
+		fprintf(stderr,"could not connect to tray.\n");
+		return -1;
 	}
-	return response.count;
+	int result = perform_handshake(tray,GET_PROCESS_COUNT);
+	if (result < 0){
+		fprintf(stderr,"could not perform handshake");
+		return -1;
+	}
+
+	//get count
+	int count;
+	result = read(tray,&count,sizeof(int));
+	if (result < 0){
+		fprintf(stderr,"could not read process count.\n");
+		perror("read");
+		return -1;
+	}
+
+	return count;
 }
 int get_running_processes(struct running_processes *proc){
 	//setup
@@ -397,8 +409,8 @@ static int serve_requests(int client){
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
 				proc.pid[proc.count-1] = pid;
 				proc.executable_path = realloc(proc.executable_path, sizeof(char *)*proc.count);
-				proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(request.executable_path)+1));
-				snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",request.executable_path);
+				proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(command)+1));
+				snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",command);
 			}
 			//clean
 			free(command);
