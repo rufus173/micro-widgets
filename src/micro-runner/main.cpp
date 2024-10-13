@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 //QT
 #include <QApplication>
@@ -67,7 +68,14 @@ int main(int argc, char **argv){
 		debug << "no command given";
 		return 0;
 	}
-	printf("%s\n", command);
+	printf("ready to execute %s\n", command);
+	debug << "forking";
+	if (daemon(1,0) < 0){//fork and disconnect stderr and stdout
+		debug < "failed to fork";
+		perror("daemon");
+		return 1;
+	}
+	return system(command);
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
