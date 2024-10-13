@@ -107,22 +107,18 @@ int main_tray(){
 			case KILL: //kill the tray
 				return 0;
 			case RUN_EXECUTABLE: //run executable
-				if (access(request.executable_path,X_OK) == 0){
-					//go fork yourself
-					pid_t pid = fork();
-					if (pid < 0) perror("fork");
-					if (pid == 0){
-						response.status = system(request.executable_path);
-					}else{
-						proc.count++;
-						proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
-						proc.pid[proc.count-1] = pid;
-						proc.executable_path = realloc(proc.executable_path, sizeof(char *)*proc.count);
-						proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(request.executable_path)+1));
-						snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",request.executable_path);
-					}
+				//go fork yourself
+				pid_t pid = fork();
+				if (pid < 0) perror("fork");
+				if (pid == 0){
+					response.status = system(request.executable_path);
 				}else{
-					response.status = 1;
+					proc.count++;
+					proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
+					proc.pid[proc.count-1] = pid;
+					proc.executable_path = realloc(proc.executable_path, sizeof(char *)*proc.count);
+					proc.executable_path[proc.count-1] = malloc(sizeof(char) * (strlen(request.executable_path)+1));
+					snprintf(proc.executable_path[proc.count-1],strlen(request.executable_path)+1,"%s",request.executable_path);
 				}
 				break;
 			case QUERY_RUNNING_COUNT:
