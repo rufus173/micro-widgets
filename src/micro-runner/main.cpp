@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <wait.h>
 #include <sys/types.h>
+#include <sys/prctl.h>
 
 //QT
 #include <QApplication>
@@ -91,6 +92,8 @@ int main(int argc, char **argv){
 	}
 	// ---------------- child ------------
 	if (child_pid != 0){
+		//change the process short name
+		prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
 		debug << "child starting tray";
 		main_tray();
 	}
