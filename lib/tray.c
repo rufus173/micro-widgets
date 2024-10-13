@@ -97,7 +97,8 @@ int main_tray(){
 		perror("bind");
 		return -1;
 	}
-	
+
+
 	//start listening for connections
 	result = listen(socket_fd, 10);
 	// -------------------- mainloop --------------
@@ -120,6 +121,22 @@ int main_tray(){
 			}
 		}
 		// ------------ serve requests ---------
+		//set socket timeouts
+		struct timeval tv;
+		tv.tv_sec = 5;//5s timeout
+		tv.tv_usec = 0;
+		result = setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(struct timeval));
+		if (result < 0){
+			fprintf(stderr,"could not set socket timeout.\n");
+			perror("setsockopt");
+			return -1;
+		}
+		result = setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(struct timeval));
+		if (result < 0){
+			fprintf(stderr, "could not set socket timeout.\n");
+			perror("setsockopt");
+			return -1;
+		}
 		stop = serve_requests(client);
 		if (stop){ //stop serving requests
 			serving_requests = 0;
@@ -365,14 +382,14 @@ static int serve_requests(int client){
 	//client version compatibility
 	if (request.version != TRAY_VERSION){
 		respond_handshake(client,BAD_VERSION);
+	}else{
+		respond_handshake(client,OK);
 	}
 
 	switch (request.opcode){
 		case NONE: //send an ok and do nothing
-			respond_handshake(client,BAD_VERSION);
 			goto client_cleanup;
 		case KILL: //kill the tray
-			respond_handshake(client,OK);
 			return 1;
 		case NEW_PROCESS:
 			//get the command to run
@@ -383,8 +400,9 @@ static int serve_requests(int client){
 				perror("read");
 				goto client_cleanup;
 			}
-			char *command = malloc(command_size);
-			result = read(client, &command, command_size);
+			char *command;
+			command =  malloc(sizeof(char)*command_size);
+			result = read(client, command, command_size);
 			if (result < 0){
 				fprintf(stderr,"could not read command.\n");
 				perror("read");
