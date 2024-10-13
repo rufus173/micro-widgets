@@ -98,6 +98,7 @@ int main(int argc, char **argv){
 	sleep(1); //give the tray time
 	int result = start_program(command);
 	printf("tray request result: %d\n",result);
+	waitpid(child_pid,NULL,0);
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
