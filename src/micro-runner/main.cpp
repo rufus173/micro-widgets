@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <wait.h>
+#include <sys/types.h>
 
 //QT
 #include <QApplication>
@@ -12,6 +14,9 @@
 
 //mine
 #include "debug.h"
+extern "C" {
+#include "tray.h"
+}
 
 //definitions
 #define WINDOW_WIDTH 700
@@ -29,6 +34,7 @@ void move_window_step(QTimer *move_loop,QWidget *window);
 void enter_pressed(QLineEdit *entry, QWidget *window);
 
 int main(int argc, char **argv){
+	// ---------------------- GUI --------------------
 	debug << "starting";
 	//create the app
 	QApplication app = QApplication(argc,argv);
@@ -46,6 +52,7 @@ int main(int argc, char **argv){
 	//entry box
 	QLineEdit *entry = new QLineEdit(main_window);
 	entry->setGeometry(0,0,WINDOW_WIDTH,ENTRY_HEIGHT);
+	entry->setTextMargins(20,0,20,0);//left top right bottom
 
 	//slide the window down with some recursive nonsense
 	QTimer *move_loop = new QTimer();
@@ -63,19 +70,34 @@ int main(int argc, char **argv){
 		debug < "window failed";
 		return window_return;
 	}
+	// ---------------------------- command execution ----------------------
 	debug << "window closed";
 	if (command == NULL){
 		debug << "no command given";
 		return 0;
 	}
 	printf("ready to execute %s\n", command);
-	debug << "forking";
-	if (daemon(1,0) < 0){//fork and disconnect stderr and stdout
-		debug < "failed to fork";
-		perror("daemon");
-		return 1;
+	pid_t child_pid = 0;
+	if (check_tray_status() < 0){
+		debug << "tray offline, forking one now.";
+		child_pid = fork();
+		if (child_pid < 0){
+			debug < "Could not fork. aborting";
+			perror("fork");
+			return 1;
+		}
+	}else{
+		debug << "Tray ready to communicate with";
 	}
-	return system(command);
+	// ---------------- child ------------
+	if (child_pid != 0){
+		debug << "child starting tray";
+		main_tray();
+	}
+	// ---------------- parent -----------
+	sleep(1); //give the tray time
+	int result = start_program(command);
+	printf("tray request result: %d\n",result);
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
