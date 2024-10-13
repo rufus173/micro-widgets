@@ -1,6 +1,5 @@
 #ifndef TRAY_H
 #define TRAY_H
-#define BUFFER_SIZE 1024
 struct running_processes {
 	int count;
 	char **executable_path;
