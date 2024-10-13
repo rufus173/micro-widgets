@@ -6,7 +6,7 @@
 #include <sys/un.h>// un, un un un un, un un un un un un.
 #include <wait.h>
 #include <sys/socket.h>
-#include "tray.h"
+//#include "tray.h"
 #include <fcntl.h>
 #include <errno.h>
 
@@ -16,18 +16,34 @@
 #define QUERY_RUNNING_EXECUTABLES 3
 #define KILL 0
 
+//--------------- structs -----------------
 struct processes {
 	int count;
 	pid_t *pid;
 	char **executable_path;
 };
-int new_process();
+struct tray_command {
+        int opcode;
+        int index;
+        char executable_path[1024];
+};
+struct tray_response {
+        int status;
+        int count;
+        char exectuable[1024];
+};
+struct running_processes {
+        int count;
+        char **executable_path;
+};
+// ------------------- prototypes -----------------
 int get_running_processes(struct running_processes *proc);
 int free_running_processes_struct(struct running_processes *proc);
 int check_tray_status();
 static struct tray_response send_tray_command(struct tray_command command);
 static int connect_tray_socket();
 
+//------------------------ public functions ----------------------
 int main_tray(){
 	printf("tray starting...\n");
 	//set up memory
@@ -254,29 +270,32 @@ int free_running_processes_struct(struct running_processes *proc){
 	free(proc->executable_path);
 	return 0;
 }
-static int connect_tray_socket(){
-	//prepare data
-	struct sockaddr_un address;
-	memset(&address,0,sizeof(struct sockaddr_un));
-	address.sun_family = AF_UNIX;
-	strncpy(address.sun_path,SOCKET_PATH,sizeof(address.sun_path)-1);
-	
-	//connect
-	int tray = socket(AF_UNIX,SOCK_STREAM,0);
+int check_tray_status(){
+	int tray = connect_tray_socket();
 	if (tray < 0){
-		fprintf(stderr,"could not create socket.\n");
-		perror("socket");
 		return -1;
 	}
 
-	int result = connect(tray,(struct sockaddr *)&address,sizeof(struct sockaddr_un));
+	//check everything is ok
+	struct tray_command command;
+	struct tray_response response;
+	command.opcode = QUERY_RUNNING_COUNT;
+	int result = write(tray,&command,sizeof(struct tray_command));
 	if (result < 0){
-		fprintf(stderr,"could not connect to tray.\n");
-		perror("connect");
 		return -1;
+		perror("write");
 	}
-	return tray;
+	result = read(tray, &response, sizeof(struct tray_response));
+	if (result < 0){
+		return -1;
+		perror("read");
+	}
+	
+	//clean and return
+	close(tray);
+	return 0;
 }
+//---------------------- private functions ------------------
 static struct tray_response send_tray_command(struct tray_command command){
 	int result;
 	struct tray_response response;
@@ -311,28 +330,26 @@ static struct tray_response send_tray_command(struct tray_command command){
 	end:
 	return response;
 }
-int check_tray_status(){
-	int tray = connect_tray_socket();
+static int connect_tray_socket(){
+	//prepare data
+	struct sockaddr_un address;
+	memset(&address,0,sizeof(struct sockaddr_un));
+	address.sun_family = AF_UNIX;
+	strncpy(address.sun_path,SOCKET_PATH,sizeof(address.sun_path)-1);
+	
+	//connect
+	int tray = socket(AF_UNIX,SOCK_STREAM,0);
 	if (tray < 0){
+		fprintf(stderr,"could not create socket.\n");
+		perror("socket");
 		return -1;
 	}
 
-	//check everything is ok
-	struct tray_command command;
-	struct tray_response response;
-	command.opcode = QUERY_RUNNING_COUNT;
-	int result = write(tray,&command,sizeof(struct tray_command));
+	int result = connect(tray,(struct sockaddr *)&address,sizeof(struct sockaddr_un));
 	if (result < 0){
+		fprintf(stderr,"could not connect to tray.\n");
+		perror("connect");
 		return -1;
-		perror("write");
 	}
-	result = read(tray, &response, sizeof(struct tray_response));
-	if (result < 0){
-		return -1;
-		perror("read");
-	}
-	
-	//clean and return
-	close(tray);
-	return 0;
+	return tray;
 }
