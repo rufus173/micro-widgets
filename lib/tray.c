@@ -24,6 +24,7 @@ struct processes {
 int new_process();
 int get_running_processes(struct running_processes *proc);
 int free_running_processes_struct(struct running_processes *proc);
+int check_tray_status();
 static struct tray_response send_tray_command(struct tray_command command);
 static int connect_tray_socket();
 
@@ -313,4 +314,29 @@ static struct tray_response send_tray_command(struct tray_command command){
 
 	end:
 	return response;
+}
+int check_tray_status(){
+	int tray = connect_tray_socket();
+	if (tray < 0){
+		return -1;
+	}
+
+	//check everything is ok
+	struct tray_command command;
+	struct tray_response response;
+	command.opcode = QUERY_RUNNING_COUNT;
+	int result = write(tray,&command,sizeof(struct tray_command));
+	if (result < 0){
+		return -1;
+		perror("write");
+	}
+	result = read(tray, &response, sizeof(struct tray_response));
+	if (result < 0){
+		return -1;
+		perror("read");
+	}
+	
+	//clean and return
+	close(tray);
+	return 0;
 }
