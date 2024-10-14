@@ -73,6 +73,7 @@ class class_quick_applications {
 	//tray interactions
 	void update_running(){
 		running_app_count = get_running_program_count();
+		//printf("%d programs running.\n",running_app_count);
 		struct running_processes procs;
 		get_running_processes(&procs);
 		//find the matching app struct and increment its count counter
