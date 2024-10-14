@@ -53,7 +53,7 @@ static int serve_requests(int socket); //0 on success 1 on stop signal
 static int perform_handshake(int sock, enum opcodes opcode);
 
 //globals
-static struct processes proc;
+static volatile struct processes proc;
 
 //------------------------ public functions ----------------------
 int main_tray(){
@@ -112,38 +112,38 @@ int main_tray(){
 			if (client < 0){
 				if (errno == EAGAIN || errno == EWOULDBLOCK){
 					//no connection to accept
-					goto waiting;
+					;
 				}else{
 					fprintf(stderr,"tray: could not accept connections.\n");
 					perror("accept");
 					return -1;
 				}
+			}else{
+				// ------------ serve requests ---------
+				//set socket timeouts
+				struct timeval tv;
+				tv.tv_sec = 5;//5s timeout
+				tv.tv_usec = 0;
+				result = setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(struct timeval));
+				if (result < 0){
+					fprintf(stderr,"could not set socket timeout.\n");
+					perror("setsockopt");
+					return -1;
+				}
+				result = setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(struct timeval));
+				if (result < 0){
+					fprintf(stderr, "could not set socket timeout.\n");
+					perror("setsockopt");
+					return -1;
+				}
+				stop = serve_requests(client);
+				if (stop){ //stop serving requests
+					serving_requests = 0;
+				}
 			}
-		}
-		// ------------ serve requests ---------
-		//set socket timeouts
-		struct timeval tv;
-		tv.tv_sec = 5;//5s timeout
-		tv.tv_usec = 0;
-		result = setsockopt(client, SOL_SOCKET, SO_RCVTIMEO, (const char *)&tv, sizeof(struct timeval));
-		if (result < 0){
-			fprintf(stderr,"could not set socket timeout.\n");
-			perror("setsockopt");
-			return -1;
-		}
-		result = setsockopt(client, SOL_SOCKET, SO_SNDTIMEO, (const char *)&tv, sizeof(struct timeval));
-		if (result < 0){
-			fprintf(stderr, "could not set socket timeout.\n");
-			perror("setsockopt");
-			return -1;
-		}
-		stop = serve_requests(client);
-		if (stop){ //stop serving requests
-			serving_requests = 0;
 		}
 		
 		// ----------- wait for running forks ---------
-		waiting:
 		//pid waiting
 		for (int i = 0; i < proc.count; i++){
 			int status = waitpid(proc.pid[i],NULL,WNOHANG);
@@ -162,8 +162,7 @@ int main_tray(){
 		if (stop && proc.count < 1){
 			break;
 		}
-
-		sleep(0.2); //dont spam the system
+		sleep(1); //dont spam the system
 	}
 	
 	printf("tray terminated.\n");
@@ -213,7 +212,7 @@ int get_running_program_count(){
 	}
 
 	//get count
-	int count;
+	int count = -1;
 	result = read(tray,&count,sizeof(int));
 	if (result < 0){
 		fprintf(stderr,"could not read process count.\n");
@@ -413,6 +412,7 @@ static int serve_requests(int client){
 			if (pid < 0) perror("fork");
 			if (pid == 0){
 				result = system(command);
+				exit(EXIT_SUCCESS);
 			}else{
 				proc.count++;
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
@@ -425,7 +425,8 @@ static int serve_requests(int client){
 			free(command);
 			break;
 		case GET_PROCESS_COUNT:
-			result = write(client,&proc.count,sizeof(int));
+			int proc_count = proc.count;
+			result = write(client,&proc_count,sizeof(int));
 			if (result < 0){
 				fprintf(stderr,"could not send process count.\n");
 				perror("write");
