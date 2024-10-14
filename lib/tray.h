@@ -1,16 +1,5 @@
 #ifndef TRAY_H
 #define TRAY_H
-#define BUFFER_SIZE 1024
-struct tray_command {
-	int opcode;
-	int index;
-	char executable_path[1024];
-};
-struct tray_response {
-	int status;
-	int count;
-	char exectuable[1024];
-};
 struct running_processes {
 	int count;
 	char **executable_path;

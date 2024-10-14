@@ -99,6 +99,7 @@ int main(int argc, char **argv){
 	}
 	// ---------------- parent -----------
 	sleep(1); //give the tray time
+	debug << "sending command to tray";
 	int result = start_program(command);
 	printf("tray request result: %d\n",result);
 	waitpid(child_pid,NULL,0);

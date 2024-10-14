@@ -18,4 +18,6 @@ quick-launcher : FORCE
 	cd src/quick-launcher/ ; qmake ; make quick-launcher && mv quick-launcher ../..
 micro-taskbar : FORCE
 	cd src/micro-taskbar ; qmake ; make micro-taskbar && mv micro-taskbar ../..
+micro-runner : FORCE
+	cd src/micro-runner ; qmake ; make micro-runner && mv micro-runner ../..
 FORCE:
