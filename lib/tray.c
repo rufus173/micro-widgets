@@ -162,7 +162,7 @@ int main_tray(){
 		if (stop && proc.count < 1){
 			break;
 		}
-		sleep(1); //dont spam the system
+		sleep(0.1); //dont spam the system
 	}
 	
 	printf("tray terminated.\n");
