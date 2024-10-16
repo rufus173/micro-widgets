@@ -38,7 +38,7 @@ int main(int argc, char **argv){
 	}
 	
 	//child process (tray)
-	if (tray_pid == 0) return main_tray();
+	if (tray_pid == 0) return main_tray(0);
 
 	debug << "done";
 
