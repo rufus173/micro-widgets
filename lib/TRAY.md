@@ -5,7 +5,13 @@
 
 ### How to use
 
-`main_tray()` should be used to start the tray. Usually you would fork, or open a new thread to run this function in. It handles incoming socket connections from `/tmp/tray.socket`. (can be changed in the `#define SOCKET_PATH`). This function handles both socket connections and also waiting on executed forks returning. It will handle a connection then attempt to wait for all open processes.
+`main_tray(int flags)` should be used to start the tray. Usually you would fork, or open a new thread to run this function in. It handles incoming socket connections from `/tmp/tray.socket`. (can be changed in the `#define SOCKET_PATH`). This function handles both socket connections and also waiting on executed forks returning. It will handle a connection then attempt to wait for all open processes.
+
+### Flags
+
+This function can be called with multiple flags to change properties about a starting tray. Flags can be or'd together to use multiple, e.g. `FLAG_A | FLAG_B`. Current flags include:
+- `0` start tray in default configuration
+- `TRAY_NO_PERSIST` once the tray has no more programs to hold, quit.
 
 ### Return value
 
