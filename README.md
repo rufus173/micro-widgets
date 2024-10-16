@@ -11,7 +11,7 @@ version > Qt5 and version > GTK4 are both required, as well as the tool qmake.
 
 Some of these modules require gtk4 and some require qt to be installed for compilation.
 all of the c files use gtk4 and all the c++ ones use qt.
-You can use `make <widget>` to make any number of widgets and `make all` to make all of them. finaly `make install` will install all compiled widgets to `/usr/local/bin`. Widgets to choose from:
+You can use `make <widget>` to make any number of widgets and `make all` to make all of them. finaly `make install` will install all compiled widgets to `/usr/bin`. Widgets to choose from:
 - shutdown-menu (GTK)
 - battery-display (GTK)
 - digital-clock (GTK)
