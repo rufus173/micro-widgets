@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/un.h>
 #include <wait.h>
+#include <time.h>
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <errno.h>
@@ -12,6 +13,9 @@
 #define SOCKET_PATH "/tmp/tray.socket"
 #define BUFFER_SIZE 1024
 #define TRAY_VERSION 2
+
+//flags
+#define TRAY_NO_PERSIST 1
 
 //--------------- structs -----------------
 enum opcodes {
@@ -56,7 +60,15 @@ static int perform_handshake(int sock, enum opcodes opcode);
 static volatile struct processes proc;
 
 //------------------------ public functions ----------------------
-int main_tray(){
+int main_tray(int flags){
+	// ----------------- flag processing ------------
+	int persistent = 1;
+	if ((flags & TRAY_NO_PERSIST) > 0){//non persistent tray
+		printf("starting in non persistent mode.\n");
+		persistent = 0;
+	}
+
+	// ---------- socket startup ------------
 	printf("tray starting...\n");
 	//set up memory
 	proc.pid = malloc(sizeof(pid_t));
@@ -104,6 +116,7 @@ int main_tray(){
 	// -------------------- mainloop --------------
 	int serving_requests = 1;
 	int stop = 0;
+	unsigned long int time_at_last_op = time(NULL);
 	for (;;){//mainloop
 		int client;
 		if (serving_requests){// 
@@ -137,6 +150,7 @@ int main_tray(){
 					return -1;
 				}
 				stop = serve_requests(client);
+				time_at_last_op = time(NULL);
 				if (stop){ //stop serving requests
 					serving_requests = 0;
 				}
@@ -159,7 +173,14 @@ int main_tray(){
 		}
 		
 		//once all programs accounted for, break from mainloop
-		if (stop && proc.count < 1){
+		//if stop || not persistent
+		if (stop && (proc.count < 1)){
+			break;
+		}
+		//clients get 10s to do something before shutdown if flag TRAY_NO_PERSIST is set
+		//printf("%d&&%lu&&%d\n",!persistent, time(NULL)-time_at_last_op, proc.count);
+		if ((!persistent) && (time(NULL)-time_at_last_op > 10) && (proc.count < 1)){
+			printf("tray auto closed due to inactivity\n");
 			break;
 		}
 		sleep(0.1); //dont spam the system
@@ -411,9 +432,12 @@ static int serve_requests(int client){
 			pid_t pid = fork();
 			if (pid < 0) perror("fork");
 			if (pid == 0){
-				result = system(command);
-				exit(EXIT_SUCCESS);
+				result = execl("/usr/bin/sh","sh","-c",command,(char*)NULL); //shouldnt return
+				printf("%s finnished.\n",command);
+				sleep(1);
+				exit(EXIT_FAILURE);
 			}else{
+				printf("forked process %d\n",pid);
 				proc.count++;
 				proc.pid = realloc(proc.pid,sizeof(pid_t)*proc.count);
 				proc.pid[proc.count-1] = pid;
