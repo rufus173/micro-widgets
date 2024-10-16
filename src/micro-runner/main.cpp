@@ -95,7 +95,8 @@ int main(int argc, char **argv){
 		//change the process short name
 		prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
 		debug << "child starting tray";
-		main_tray();
+		main_tray(TRAY_NO_PERSIST); //close after last program closes
+		exit(EXIT_SUCCESS);
 	}
 	// ---------------- parent -----------
 	sleep(1); //give the tray time
