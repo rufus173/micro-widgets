@@ -185,6 +185,7 @@ int main_tray(int flags){
 		}
 		sleep(0.1); //dont spam the system
 	}
+	close(socket_fd);
 	
 	printf("tray terminated.\n");
 	return 0;

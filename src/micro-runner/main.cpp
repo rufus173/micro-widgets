@@ -25,16 +25,64 @@ extern "C" {
 #define HINT_MENU_HEIGHT 0
 
 //globals
-debug_class debug = debug_class("main");
 int active_display_height;
 int active_display_width;
 int left_x_when_centred;
 char *command = NULL;
 
+int build_gui(int argc,char **argv);
 void move_window_step(QTimer *move_loop,QWidget *window);
 void enter_pressed(QLineEdit *entry, QWidget *window);
 
 int main(int argc, char **argv){
+	debug_class debug = debug_class("main");
+	//gui
+	build_gui(argc,argv);
+	// ---------------------------- command execution ----------------------
+	debug << "window closed";
+	if (command == NULL){
+		debug << "no command given";
+		return 0;
+	}
+	printf("ready to execute %s\n", command);
+	pid_t child_pid = -1;
+	if (check_tray_status() < 0){
+		debug << "tray offline, forking one now.";
+		child_pid = fork();
+		if (child_pid < 0){
+			debug < "Could not fork. aborting";
+			perror("fork");
+			return 1;
+		}
+	}else{
+		debug << "Tray ready to communicate with";
+	}
+	// ---------------- child ------------
+	if (child_pid == 0){
+		//change the process short name
+		//prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
+		debug << "child starting tray";
+		main_tray(TRAY_NO_PERSIST); //close after last program closes
+		debug << "child tray fork exiting";
+		//exit(EXIT_SUCCESS);
+		abort();
+	}
+	// ---------------- parent -----------
+	sleep(1); //give the tray time
+	debug << "sending command to tray";
+	int result = start_program(command);
+	printf("tray request result: %d\n",result);
+	printf("waiting for tray fork on pid %d to close\n",child_pid);
+	result = waitpid(child_pid,NULL,WUNTRACED);
+	if (result < 0){
+		fprintf(stderr,"could not wait for tray.");
+		perror("waitpid");
+		return 1;
+	}
+	return 0;
+}
+int build_gui(int argc, char **argv){
+	debug_class debug = debug_class("build_gui");
 	// ---------------------- GUI --------------------
 	debug << "starting";
 	//create the app
@@ -71,39 +119,7 @@ int main(int argc, char **argv){
 		debug < "window failed";
 		return window_return;
 	}
-	// ---------------------------- command execution ----------------------
-	debug << "window closed";
-	if (command == NULL){
-		debug << "no command given";
-		return 0;
-	}
-	printf("ready to execute %s\n", command);
-	pid_t child_pid = 0;
-	if (check_tray_status() < 0){
-		debug << "tray offline, forking one now.";
-		child_pid = fork();
-		if (child_pid < 0){
-			debug < "Could not fork. aborting";
-			perror("fork");
-			return 1;
-		}
-	}else{
-		debug << "Tray ready to communicate with";
-	}
-	// ---------------- child ------------
-	if (child_pid != 0){
-		//change the process short name
-		prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
-		debug << "child starting tray";
-		main_tray(TRAY_NO_PERSIST); //close after last program closes
-		exit(EXIT_SUCCESS);
-	}
-	// ---------------- parent -----------
-	sleep(1); //give the tray time
-	debug << "sending command to tray";
-	int result = start_program(command);
-	printf("tray request result: %d\n",result);
-	waitpid(child_pid,NULL,0);
+	return 0;
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
@@ -115,6 +131,7 @@ void enter_pressed(QLineEdit *entry, QWidget *window){
 	window->close();
 }
 void move_window_step(QTimer *move_loop,QWidget *window){
+	debug_class debug = debug_class("move_window_step");
 	//the point when it slows down
 	int threshold = 50;
 
