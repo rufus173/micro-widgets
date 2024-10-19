@@ -3,6 +3,7 @@
 #include <wait.h>
 #include <sys/types.h>
 #include <sys/prctl.h>
+#include <setjmp.h>
 
 //QT
 #include <QApplication>
@@ -35,47 +36,47 @@ void move_window_step(QTimer *move_loop,QWidget *window);
 void enter_pressed(QLineEdit *entry, QWidget *window);
 
 int main(int argc, char **argv){
-	debug_class debug = debug_class("main");
 	//gui
-	build_gui(argc,argv);
+	build_gui(argc,argv);//causes exit() to hang
 	// ---------------------------- command execution ----------------------
-	debug << "window closed";
+	printf("window closed\n");
 	if (command == NULL){
-		debug << "no command given";
+		printf("no command given\n");
 		return 0;
 	}
+	
 	printf("ready to execute %s\n", command);
 	pid_t child_pid = -1;
 	if (check_tray_status() < 0){
-		debug << "tray offline, forking one now.";
+		printf("tray offline, forking one now.\n");
 		child_pid = fork();
 		if (child_pid < 0){
-			debug < "Could not fork. aborting";
+			fprintf(stderr,"ERROR: Could not fork. aborting\n");
 			perror("fork");
 			return 1;
 		}
 	}else{
-		debug << "Tray ready to communicate with";
+		 printf("Tray ready to communicate with\n");
 	}
 	// ---------------- child ------------
 	if (child_pid == 0){
 		//change the process short name
-		//prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
-		debug << "child starting tray";
+		prctl(PR_SET_NAME, /*idk what this is>*/(unsigned long)"tray", 0, 0, 0);
+		printf("child starting tray\n");
 		main_tray(TRAY_NO_PERSIST); //close after last program closes
-		debug << "child tray fork exiting";
-		//exit(EXIT_SUCCESS);
-		abort();
+		printf("child tray fork exiting\n");
+		abort();//exit gets stuck
 	}
 	// ---------------- parent -----------
 	sleep(1); //give the tray time
-	debug << "sending command to tray";
+	printf("sending command to tray\n");
 	int result = start_program(command);
+	free(command);
 	printf("tray request result: %d\n",result);
 	printf("waiting for tray fork on pid %d to close\n",child_pid);
 	result = waitpid(child_pid,NULL,WUNTRACED);
 	if (result < 0){
-		fprintf(stderr,"could not wait for tray.");
+		fprintf(stderr,"could not wait for tray.\n");
 		perror("waitpid");
 		return 1;
 	}
@@ -115,6 +116,12 @@ int build_gui(int argc, char **argv){
 	debug << "running app.\n";
 	main_window->show();
 	int window_return = app.exec();
+	
+	//destroy everything
+	delete main_window;
+	delete move_loop;
+	delete active_display;
+
 	if (window_return != 0){
 		debug < "window failed";
 		return window_return;
@@ -123,8 +130,9 @@ int build_gui(int argc, char **argv){
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
-		static QByteArray byte_array = entry->text().toLatin1();
-		command = byte_array.data();
+		QByteArray byte_array = entry->text().toLatin1();
+		command = (char*)malloc(sizeof(char)*(byte_array.size()+1));
+		strncpy(command,byte_array.data(),byte_array.size()+1);
 	}else{
 		command = NULL;
 	}
