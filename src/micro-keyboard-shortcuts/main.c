@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <pwd.h>
 #include "input.h"
 
 #define MAX_KEY_CODE 200
@@ -15,9 +16,17 @@ struct keybinds {
 };
 
 void run_command(char *);
+int un_privilege();
 int main(int argc, char **argv){
 	// ------------ setup -------------
 	int input_fd = connect_input_fd("/dev/input/by-id/usb-Logitech_LogiG_TKL_MKeyboard-event-kbd");
+	
+	//unprivelage one's self to prevent disasters
+	if (un_privilege() != 0){
+		fprintf(stderr,"could not reduce privelage level. try setting the USER variable to an unprivelaged user\n");
+		return 1;
+	}
+
 	if (input_fd < 0){
 		fprintf(stderr,"could create an input file descriptor\n");
 		return 1;
@@ -85,4 +94,39 @@ int main(int argc, char **argv){
 }
 void run_command(char *command){
 	system(command);
+}
+int un_privilege(){
+	//get users uid and gid
+	char *username = getenv("USER");
+	if (username == NULL){
+		fprintf(stderr,"could not get user from env variables\n");
+		perror("getenv");
+		return -1;
+	}
+	printf("using username %s\n",username);
+	struct passwd *password = getpwnam(username);
+	if (password == NULL){
+		fprintf(stderr,"could not get uid info\n");
+		perror("getpwnam");
+		return -1;
+	}
+
+	int status = setgid(password->pw_gid);
+	if (status < 0){
+		fprintf(stderr,"could not lower privelages: aborting.\n");
+		perror("setgid");
+		return -1;
+	}
+	status = setuid(password->pw_uid);
+	if (status < 0){
+		fprintf(stderr,"could not lower privelages: aborting.\n");
+		perror("setuid");
+		return -1;
+	}
+	printf("using uid %d and gid %d\n",password->pw_uid, password->pw_gid);
+	if (password->pw_uid == 0 || password->pw_gid == 0){
+		fprintf(stderr,"could not find a non root user to run as.\n");
+		return -1;
+	}
+	return 0;
 }
