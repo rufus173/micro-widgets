@@ -19,16 +19,22 @@ void run_command(char *);
 int un_privilege();
 int main(int argc, char **argv){
 	// ------------ setup -------------
-	int input_fd = connect_input_fd("/dev/input/by-id/usb-Logitech_LogiG_TKL_MKeyboard-event-kbd");
+	char *keyboard_device_location = get_keyboard_device_location();
+	if (*keyboard_device_location == 0){
+		fprintf(stderr,"could not find keyboard device file.\n");
+		return 1;
+	}
+	printf("using keyboard %s\n",keyboard_device_location);
+
+	int input_fd = connect_input_fd(keyboard_device_location);
+	if (input_fd < 0){
+		fprintf(stderr,"could create an input file descriptor\n");
+		return 1;
+	}
 	
 	//unprivelage one's self to prevent disasters
 	if (un_privilege() != 0){
 		fprintf(stderr,"could not reduce privelage level. try setting the USER variable to an unprivelaged user\n");
-		return 1;
-	}
-
-	if (input_fd < 0){
-		fprintf(stderr,"could create an input file descriptor\n");
 		return 1;
 	}
 
@@ -117,6 +123,12 @@ int un_privilege(){
 		perror("setgid");
 		return -1;
 	}
+	/*status = seteuid(password->pw_uid);
+	if (status < 0){
+		fprintf(stderr,"could not lower privelages: aborting.\n");
+		perror("seteuid");
+		return -1;
+	}*/
 	status = setuid(password->pw_uid);
 	if (status < 0){
 		fprintf(stderr,"could not lower privelages: aborting.\n");
