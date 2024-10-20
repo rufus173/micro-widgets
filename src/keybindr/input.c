@@ -2,7 +2,12 @@
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <string.h>
 #include <linux/input.h>
+
+#define KEYBOARD_LOCATION_BUFFER_LENGTH 1024
 
 // ------- definitions -------
 enum key_state {
@@ -15,6 +20,8 @@ struct keypress_info {
 	enum key_state state;
 };
 
+// ------ private functions ---
+
 // ------ public functions ----
 int connect_input_fd(char *location){
 	int input_fd = open(location, O_RDONLY);
@@ -24,6 +31,27 @@ int connect_input_fd(char *location){
 		return -1;
 	}
 }
+char *get_keyboard_device_location(){
+	static char device_location[KEYBOARD_LOCATION_BUFFER_LENGTH] = {0};
+	char *base_location = "/dev/input/by-id";
+	char *search_pattern = "Keyboard-event-kbd";
+	DIR *keyboard_id_dir;
+
+	// implement ls
+	keyboard_id_dir = opendir(base_location);
+	//for each thing in the dir
+	for (struct dirent *file_in_dir = readdir(keyboard_id_dir) ; file_in_dir != NULL; file_in_dir = readdir(keyboard_id_dir)){
+		//search for search_pattern in base_location directory
+		if (strstr(file_in_dir->d_name,search_pattern) != NULL){
+			//printf("match: %s;%s\n",file_in_dir->d_name,search_pattern);
+			snprintf(device_location,KEYBOARD_LOCATION_BUFFER_LENGTH,"%s/%s",base_location,file_in_dir->d_name);
+		}
+	}
+	closedir(keyboard_id_dir);
+
+	//return complete location buffer
+	return device_location; //device_location[0] will be 0 if no result found
+};
 struct keypress_info get_keypress(int input_fd){
 	// ----- get the input -----
 	struct input_event input;

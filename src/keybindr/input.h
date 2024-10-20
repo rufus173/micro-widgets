@@ -16,5 +16,6 @@ struct keypress_info {
 	enum key_state state;
 };
 int connect_input_fd(char *location);
+char *get_keyboard_device_location();
 struct keypress_info get_keypress(int input_fd);
 #endif
