@@ -1,6 +1,7 @@
+CFLAGS=-g
 keybindr :  main.o input.o
-	gcc -o keybindr main.o input.o
-main.o : main.c input.h
-	gcc -c main.c
-input.o : input.c
-	gcc -c input.c
+	gcc $(CFLAGS) main.o input.o -o keybindr
+main.o : main.c ../../lib/input.h
+	gcc $(CFLAGS) -c main.c
+input.o : ../../lib/input.c
+	gcc $(CFLAGS) -c ../../lib/input.c
