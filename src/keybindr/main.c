@@ -1,22 +1,26 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
 #include "../../lib/input.h"
+#include "../../lib/tray.h"
 
 #define MAX_KEY_CODE 200
+#define MAX_KEYS_IN_BIND 4
 
 struct key_tracking {
 	enum key_state state;
 };
 struct keybinds {
 	int key_count;
-	int keycodes[4];
+	int keycodes[MAX_KEYS_IN_BIND];
 	char *command;
 };
 
 void run_command(char *);
 int un_privilege();
+int load_keybinds(struct keybinds **);
 int main(int argc, char **argv){
 	// ------------ setup -------------
 	char *keyboard_device_location = get_keyboard_device_location();
@@ -28,7 +32,7 @@ int main(int argc, char **argv){
 
 	int input_fd = connect_input_fd(keyboard_device_location);
 	if (input_fd < 0){
-		fprintf(stderr,"could create an input file descriptor\n");
+		fprintf(stderr,"could create an input file descriptor. Are you running as root?\n");
 		return 1;
 	}
 	
@@ -39,14 +43,11 @@ int main(int argc, char **argv){
 	}
 
 	// --------- setup keybinds -----------
-	int keybind_count = 1;
 	struct keybinds *keybinds;
-	keybinds = malloc(sizeof(struct keybinds)*keybind_count);
-	//some manual binds
-	keybinds[0].key_count = 2; // 2 keys in the sequence
-	keybinds[0].keycodes[0] = 125; //windows
-	keybinds[0].keycodes[1] = 19; // r key
-	keybinds[0].command = "konsole";
+	int keybind_count = load_keybinds(&keybinds);
+	if (keybind_count < 0){	
+		fprintf(stderr,"could not load keybinds. Continuing\n");
+	}
 
 	// --------- setup key_storage ---------
 	struct key_tracking key_storage[MAX_KEY_CODE]; //holds the status of all keys on the board
@@ -146,4 +147,81 @@ int un_privilege(){
 		return -1;
 	}
 	return 0;
+}
+int load_keybinds(struct keybinds **keybinds_to_populate){
+	//open config file
+	char config_filepath[1024];
+	char *user = getenv("USER");
+	snprintf(config_filepath,1024,"/home/%s/.config/micro-widgets/keybindr.conf",user);
+	printf("checking config file %s\n",config_filepath);
+	if (access(config_filepath,R_OK) != 0){
+		fprintf(stderr,"could not access file path\n");
+		perror("access");
+		return -1;
+	}
+	FILE *config_file = fopen(config_filepath,"r");
+	if (config_file == NULL){
+		fprintf(stderr,"could not open configfile\n");
+		perror("fopen");
+		return -1;
+	}
+	
+	int keybind_count = 0;
+	//read each line and interpret the config file.
+	//discard any incomplete lines.
+	for (int line = 0;feof(config_file) == 0;line++){
+		//-------- read each line -----------
+		char *line_buffer = NULL;
+		for (int length = 1;;length++){
+			line_buffer = realloc(line_buffer,sizeof(char)*(length+1));
+			line_buffer[length] = '\0';
+			fread(line_buffer+length-1,1,1,config_file);
+			if (feof(config_file) || line_buffer[length-1] == '\n'){
+				line_buffer[length-1] = '\0';
+				break;
+			}
+		}
+		//ignore empty lines or commented lines
+		if (line_buffer[0] == '\0' || line_buffer[0] == '#') goto cleanup_after_line_read;
+
+		//----------- process each line ------------
+		printf("breaking down %s...\n",line_buffer);
+
+		//extract the command as the last arg
+		char *command = strrchr(line_buffer,',');// find last instance of comma in string and look at the string after it to the end
+		if (command == NULL){
+			fprintf(stderr,"invalaid line %d in config: %s\n",line,line_buffer);
+			goto cleanup_after_line_read;
+		}
+		command++; //dont include the comma
+		printf("command %s\n",command);
+		//command is a pointer to something in string line_buffer
+		*(command-1) = '\0'; //cut of the command from the line buffer
+
+		//find the last MAX_KEYS_IN_BIND args seperated by commas
+		char *key = NULL;
+		for (int key_count = 0; key != line_buffer; key_count++){ //repeat untill we reach the begining of the string (key == line_buffer)
+			key = strrchr(line_buffer,',');
+			if (key == NULL){
+				key = line_buffer;
+			}else{
+				*key = '\0'; //prep for next itteration
+				key++; //exclude the , if it exists
+			}
+			printf("key %s\n",key);
+			keybinds_to_populate[keybind_count].keycodes[key_count] = key_to_code(key);
+			keybinds_to_populate[keybind_count].key_count = key_count+1;
+			if (key_count+1 >= MAX_KEYS_IN_BIND){
+				printf("line %d, to many keys\n",line+1);
+				break;
+			}
+		}
+		keybind_count++;
+
+		cleanup_after_line_read:
+		//free line memory
+		free(line_buffer);
+	}
+
+	return keybind_count;
 }
