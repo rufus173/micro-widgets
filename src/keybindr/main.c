@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
-#include "input.h"
+#include "../../lib/input.h"
 
 #define MAX_KEY_CODE 200
 
