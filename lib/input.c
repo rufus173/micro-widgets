@@ -84,3 +84,22 @@ int get_keypress(int input_fd, struct keypress_info *decoded_keypress){
 	decoded_keypress->keycode = input.code;
 	return 0;
 }
+int key_to_code(char *key){
+	int code = -1;
+	if (strcmp(key,"shift") == 0){
+		return 54;
+	}else if(strcmp(key,"ctrl") == 0){
+		return 29;
+	}else if(strcmp(key,"super") == 0){
+		return 125;
+	}
+	if (key[1] == '\0'){ //only 1 char
+		char translation_table[] = "qwertyuiop[]  asdfghjkl;'   #zxcvbnm,./";
+		char *pos = strchr(translation_table,*key);
+		if (pos != NULL){
+			uintptr_t pointer = translation_table-pos;
+			return abs(pointer)+16;
+		}
+	}
+	return code;
+}
