@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -21,6 +23,13 @@ struct keypress_info {
 };
 
 // ------ private functions ---
+static char *to_lower_case(char *input){ //non destructive
+	char *output = malloc(sizeof(char)*(strlen(input)+1));
+	for (int i = 0; i < strlen(input); i++){
+		output[i] = tolower(input[i]);
+	}
+	return output;
+}
 
 // ------ public functions ----
 int connect_input_fd(char *location){
@@ -33,8 +42,8 @@ int connect_input_fd(char *location){
 }
 char *get_keyboard_device_location(){
 	static char device_location[KEYBOARD_LOCATION_BUFFER_LENGTH] = {0};
-	char *base_location = "/dev/input/by-id";
-	char *search_pattern = "Keyboard-event-kbd";
+	const char *base_location = "/dev/input/by-id";
+	const char *search_pattern = "keyboard-event-kbd"; //use lower case
 	DIR *keyboard_id_dir;
 
 	// implement ls
@@ -42,17 +51,19 @@ char *get_keyboard_device_location(){
 	//for each thing in the dir
 	for (struct dirent *file_in_dir = readdir(keyboard_id_dir) ; file_in_dir != NULL; file_in_dir = readdir(keyboard_id_dir)){
 		//search for search_pattern in base_location directory
-		if (strstr(file_in_dir->d_name,search_pattern) != NULL){
+		char *lower_case_filename = to_lower_case(file_in_dir->d_name);
+		if (strstr(lower_case_filename,search_pattern) != NULL){
 			//printf("match: %s;%s\n",file_in_dir->d_name,search_pattern);
 			snprintf(device_location,KEYBOARD_LOCATION_BUFFER_LENGTH,"%s/%s",base_location,file_in_dir->d_name);
 		}
+		free(lower_case_filename);
 	}
 	closedir(keyboard_id_dir);
 
 	//return complete location buffer
 	return device_location; //device_location[0] will be 0 if no result found
 };
-struct keypress_info get_keypress(int input_fd){
+int get_keypress(int input_fd, struct keypress_info *decoded_keypress){
 	// ----- get the input -----
 	struct input_event input;
 	for (;;){//listen untill we get an ACUTAL keyboard event
@@ -60,6 +71,7 @@ struct keypress_info get_keypress(int input_fd){
 		if (status < 0){
 			fprintf(stderr, "could not read from the input file descriptor\n");
 			perror("read");
+			return -1;
 		}
 		//actual keyboard event
 		if (input.type == EV_KEY){
@@ -68,8 +80,7 @@ struct keypress_info get_keypress(int input_fd){
 	}
 
 	// ----- decode the input -----
-	struct keypress_info decoded_keypress;
-	decoded_keypress.state = input.value;
-	decoded_keypress.keycode = input.code;
-	return decoded_keypress;
+	decoded_keypress->state = input.value;
+	decoded_keypress->keycode = input.code;
+	return 0;
 }

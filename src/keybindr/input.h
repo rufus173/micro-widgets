@@ -17,5 +17,5 @@ struct keypress_info {
 };
 int connect_input_fd(char *location);
 char *get_keyboard_device_location();
-struct keypress_info get_keypress(int input_fd);
+int get_keypress(int input_fd, struct keypress_info *result);
 #endif

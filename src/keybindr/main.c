@@ -58,7 +58,11 @@ int main(int argc, char **argv){
 	for (;;){
 		//get keypress
 		struct keypress_info keypress;
-		keypress = get_keypress(input_fd);
+		int status = get_keypress(input_fd,&keypress);
+		if (status != 0){
+			fprintf(stderr,"error occured while trying to read input file\n");
+			break;
+		}
 		
 		//store in the relevant index of the struct list
 		key_storage[keypress.keycode].state = keypress.state;
@@ -96,6 +100,7 @@ int main(int argc, char **argv){
 	}
 	// program ends
 	close(input_fd);
+	free(keybinds);
 	return 0;
 }
 void run_command(char *command){
