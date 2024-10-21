@@ -20,4 +20,6 @@ micro-taskbar : FORCE
 	cd src/micro-taskbar ; qmake ; make micro-taskbar && mv micro-taskbar ../..
 micro-runner : FORCE
 	cd src/micro-runner ; qmake ; make micro-runner && mv micro-runner ../..
+keybindr : FORCE
+	make -C src/keybindr set-id-keybindr ; cp -p src/keybindr/keybindr .
 FORCE:

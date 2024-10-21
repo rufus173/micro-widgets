@@ -18,3 +18,4 @@ You can use `make <widget>` to make any number of widgets and `make all` to make
 - quick-launcher (QT)
 - micro-taskbar (QT)
 - micro-runner (QT)
+- keybindr (compile with sudo)

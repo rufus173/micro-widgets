@@ -8,7 +8,7 @@ ls | while read file
 do
 	if echo "$(file "$file")" | grep -qi "ELF 64-bit LSB pie executable" ; then
 		echo "Installing $file..."
-		cp "$file" /usr/bin
+		cp -p "$file" /usr/bin
 		echo "Done"
 	fi
 done
