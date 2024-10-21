@@ -21,6 +21,8 @@ struct keybinds {
 void run_command(char *);
 int un_privilege();
 int load_keybinds(struct keybinds **);
+void free_keybinds(struct keybinds **, int);
+void print_keybinds(struct keybinds *keybinds, int keybind_count);
 int main(int argc, char **argv){
 	// ------------ setup -------------
 	char *keyboard_device_location = get_keyboard_device_location();
@@ -48,6 +50,7 @@ int main(int argc, char **argv){
 	if (keybind_count < 0){	
 		fprintf(stderr,"could not load keybinds. Continuing\n");
 	}
+	print_keybinds(keybinds,keybind_count);
 
 	// --------- setup key_storage ---------
 	struct key_tracking key_storage[MAX_KEY_CODE]; //holds the status of all keys on the board
@@ -101,11 +104,11 @@ int main(int argc, char **argv){
 	}
 	// program ends
 	close(input_fd);
-	free(keybinds);
+	free_keybinds(&keybinds,keybind_count);
 	return 0;
 }
 void run_command(char *command){
-	system(command);
+	//system(command);
 }
 int un_privilege(){
 	//get users uid and gid
@@ -149,6 +152,9 @@ int un_privilege(){
 	return 0;
 }
 int load_keybinds(struct keybinds **keybinds_to_populate){
+	//set up to be allocated
+	*keybinds_to_populate = NULL;
+
 	//open config file
 	char config_filepath[1024];
 	char *user = getenv("USER");
@@ -185,7 +191,7 @@ int load_keybinds(struct keybinds **keybinds_to_populate){
 		if (line_buffer[0] == '\0' || line_buffer[0] == '#') goto cleanup_after_line_read;
 
 		//----------- process each line ------------
-		printf("breaking down %s...\n",line_buffer);
+		//printf("breaking down %s...\n",line_buffer);
 
 		//extract the command as the last arg
 		char *command = strrchr(line_buffer,',');// find last instance of comma in string and look at the string after it to the end
@@ -194,7 +200,12 @@ int load_keybinds(struct keybinds **keybinds_to_populate){
 			goto cleanup_after_line_read;
 		}
 		command++; //dont include the comma
+		
+		//allocate another element
+		*keybinds_to_populate = realloc(*keybinds_to_populate,sizeof(struct keybinds)*(keybind_count+1));
 		printf("command %s\n",command);
+		(*keybinds_to_populate)[keybind_count].command = malloc(sizeof(char) * (strlen(command)+1));
+		strcpy((*keybinds_to_populate)[keybind_count].command,command);
 		//command is a pointer to something in string line_buffer
 		*(command-1) = '\0'; //cut of the command from the line buffer
 
@@ -209,10 +220,12 @@ int load_keybinds(struct keybinds **keybinds_to_populate){
 				key++; //exclude the , if it exists
 			}
 			printf("key %s\n",key);
-			keybinds_to_populate[keybind_count].keycodes[key_count] = key_to_code(key);
-			keybinds_to_populate[keybind_count].key_count = key_count+1;
+			int key_code = key_to_code(key);
+			printf("translated %s to code %d\n",key,key_code);
+			(*keybinds_to_populate)[keybind_count].keycodes[key_count] = key_code;
+			(*keybinds_to_populate)[keybind_count].key_count = key_count+1;
 			if (key_count+1 >= MAX_KEYS_IN_BIND){
-				printf("line %d, to many keys\n",line+1);
+				printf("line %d, too many keys\n",line+1);
 				break;
 			}
 		}
@@ -224,4 +237,23 @@ int load_keybinds(struct keybinds **keybinds_to_populate){
 	}
 
 	return keybind_count;
+}
+void free_keybinds(struct keybinds **keybinds,int keybind_count){
+	for (int i = 0; i < keybind_count; i++){
+		free((*keybinds)[i].command);
+	}
+	free(*keybinds);
+}
+void print_keybinds(struct keybinds *keybinds, int keybind_count){
+	printf("============== keybinds(%d) ===============\n",keybind_count);
+	for (int keybind_index = 0; keybind_index < keybind_count; keybind_index++){
+		printf("------- bind %d ------\n",keybind_index);
+		printf("command: %s\n",keybinds[keybind_index].command);
+		printf("keycode sequence:");
+		for (int i = 0; i < keybinds[keybind_index].key_count; i++){
+			printf("%d ",keybinds[keybind_index].keycodes[i]);
+		}
+		printf("\n");
+	}
+	printf("============== end of keybinds ===============\n");
 }
