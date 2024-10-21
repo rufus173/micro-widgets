@@ -1,7 +1,13 @@
 CFLAGS=-g
-keybindr :  main.o input.o
-	gcc $(CFLAGS) main.o input.o -o keybindr
-main.o : main.c ../../lib/input.h
+LIBFOLDER=../../lib
+EXECUTABLENAME=keybindr
+$(EXECUTABLENAME) :  main.o input.o tray.o
+	gcc $(CFLAGS) tray.o main.o input.o -o $(EXECUTABLENAME)
+main.o : main.c $(LIBFOLDER)/input.h $(LIBFOLDER)/tray.h
 	gcc $(CFLAGS) -c main.c
-input.o : ../../lib/input.c
-	gcc $(CFLAGS) -c ../../lib/input.c
+input.o : $(LIBFOLDER)/input.c
+	gcc $(CFLAGS) -c $(LIBFOLDER)/input.c
+tray.o : $(LIBFOLDER)/tray.c
+	gcc $(CFLAGS) -c $(LIBFOLDER)/tray.c
+set-id-$(EXECUTABLENAME) : $(EXECUTABLENAME)
+	./set-id $(EXECUTABLENAME)
