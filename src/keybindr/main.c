@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pwd.h>
+#include <sys/wait.h>
 #include "../../lib/input.h"
 #include "../../lib/tray.h"
 
@@ -17,6 +18,8 @@ struct keybinds {
 	int keycodes[MAX_KEYS_IN_BIND];
 	char *command;
 };
+
+static pid_t child_pid = -1;
 
 void run_command(char *);
 int un_privilege();
@@ -60,6 +63,13 @@ int main(int argc, char **argv){
 
 	// ------------ mainloop -----------
 	for (;;){
+		//wait for any tray forks
+		if (child_pid != -1){
+			if (waitpid(child_pid,NULL,WNOHANG) > 0){
+				child_pid = -1;
+			}
+		}
+
 		//get keypress
 		struct keypress_info keypress;
 		int status = get_keypress(input_fd,&keypress);
@@ -108,7 +118,16 @@ int main(int argc, char **argv){
 	return 0;
 }
 void run_command(char *command){
-	//system(command);
+	//check if there is a tray running
+	if (check_tray_status() != 0){
+		child_pid = fork();
+		if (child_pid == 0){
+			main_tray(TRAY_NO_PERSIST);
+			exit(EXIT_SUCCESS);
+		}
+		sleep(1); //alllow main_tray to start
+	}
+	start_program(command);
 }
 int un_privilege(){
 	//get users uid and gid
