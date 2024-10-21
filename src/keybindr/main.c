@@ -254,6 +254,7 @@ int load_keybinds(struct keybinds **keybinds_to_populate){
 		//free line memory
 		free(line_buffer);
 	}
+	fclose(config_file);
 
 	return keybind_count;
 }
