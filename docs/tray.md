@@ -27,6 +27,16 @@ This function can be used by tray clients, and handles connecting to the tray, s
 
 0 on success, -1 on failure
 
+## `int check_tray_status()`
+
+### How to use
+
+You can use this function to check if a tray is currently running.
+
+### Return value
+
+0 if a tray is available or 1 if there is not one open
+
 # Private functions
 
 ## `static int connect_tray_socket()`
