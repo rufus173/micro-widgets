@@ -29,7 +29,7 @@ void print_keybinds(struct keybinds *keybinds, int keybind_count);
 int main(int argc, char **argv){
 	// ------------ setup -------------
 	char *keyboard_device_location = get_keyboard_device_location();
-	if (*keyboard_device_location == 0){
+	if (keyboard_device_location == NULL){
 		fprintf(stderr,"could not find keyboard device file.\n");
 		return 1;
 	}
@@ -115,6 +115,7 @@ int main(int argc, char **argv){
 	// program ends
 	close(input_fd);
 	free_keybinds(&keybinds,keybind_count);
+	free(keyboard_device_location);
 	return 0;
 }
 void run_command(char *command){
