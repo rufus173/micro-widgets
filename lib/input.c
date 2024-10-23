@@ -115,6 +115,8 @@ int key_to_code(char *key){
 		return 29;
 	}else if(strcmp(key,"super") == 0){
 		return 125;
+	}else if (strcmp(key,"alt") == 0){
+		return 56;
 	}
 	if (key[1] == '\0'){ //only 1 char
 		char translation_table[] = "qwertyuiop[]  asdfghjkl;'   #zxcvbnm,./";
