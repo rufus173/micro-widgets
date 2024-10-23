@@ -9,5 +9,5 @@ input.o : $(LIBFOLDER)/input.c
 	gcc $(CFLAGS) -c $(LIBFOLDER)/input.c
 tray.o : $(LIBFOLDER)/tray.c
 	gcc $(CFLAGS) -c $(LIBFOLDER)/tray.c
-set-id-$(EXECUTABLENAME) : $(EXECUTABLENAME)
-	./set-id $(EXECUTABLENAME)
+add-group-input : $(EXECUTABLENAME)
+	./add-input-group

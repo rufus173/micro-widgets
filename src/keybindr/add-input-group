@@ -3,5 +3,11 @@ if [ "$(id -u)" -ne 0 ]; then
 	echo "must be run as superuser"
 	exit 1
 fi
-sudo chown root "$1"
-sudo chmod u+s "$1"
+#find a username from the path
+if [ -z "$SUDO_USER" ]; then
+	echo "could not determine user."
+	exit 1
+fi
+echo "adding $SUDO_USER to input group"
+
+usermod -a -G input "$SUDO_USER"
