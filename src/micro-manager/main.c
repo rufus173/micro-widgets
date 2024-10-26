@@ -48,6 +48,7 @@ int main(int argc, char **argv){
 		}else if (event.type == ButtonPress && event.xbutton.subwindow != None){
 			printf("window picked up\n");
 			XGetWindowAttributes(display,event.xbutton.subwindow, &attributes);//get selected window's attributes
+			XRaiseWindow(display, event.xkey.subwindow);
 			start = event.xbutton;
 			printf("start cursor pos: %d,%d\n",start.x_root, start.y_root);
 			printf("start window pos: %d, %d\n",attributes.x,attributes.y);
