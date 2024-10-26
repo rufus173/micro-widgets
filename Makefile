@@ -22,4 +22,6 @@ micro-runner : FORCE
 	cd src/micro-runner ; qmake ; make micro-runner && mv micro-runner ../..
 keybindr : FORCE
 	make -C src/keybindr add-group-input ; cp -p src/keybindr/keybindr .
+micro-manager : FORCE
+	make -C src/micro-manager micro-manager ; cp src/micro-manager/micro-manager .
 FORCE:

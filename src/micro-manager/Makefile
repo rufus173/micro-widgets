@@ -1,4 +1,3 @@
-CFLAGS=
 micro-manager : main.o
 	gcc main.o `pkg-config --libs x11` -o micro-manager
 main.o : main.c
