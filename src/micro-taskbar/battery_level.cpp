@@ -47,14 +47,14 @@ static int get_battery_percent(){
 	if (!battery_available) return 100;
 
 	//check if the battery is available
-        if (access("/sys/class/power_supply/BAT0/charge_now",F_OK) != 0){
+        if (access("/sys/class/power_supply/BAT0/energy_now",F_OK) != 0){
 		debug < "could not access battery data";
 		battery_available = false;
                 return 100;
         }
 
-        FILE *charge_now_fd = fopen("/sys/class/power_supply/BAT0/charge_now","r");
-        FILE *charge_full_fd = fopen("/sys/class/power_supply/BAT0/charge_full","r");
+        FILE *charge_now_fd = fopen("/sys/class/power_supply/BAT0/energy_now","r");
+        FILE *charge_full_fd = fopen("/sys/class/power_supply/BAT0/energy_full","r");
         if (charge_now_fd == NULL || charge_full_fd == NULL){
 		debug < "problems opening battery file descriptors";
                 perror("fopen");
