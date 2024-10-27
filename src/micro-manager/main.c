@@ -77,15 +77,20 @@ int main(int argc, char **argv){
 			start_cursor_y = start.x_root; start_window_y = start.y_root;
 			start_window_x = attributes.x;
 			start_window_y = attributes.y;
+
+			//so we drag the window from where we clicked it rather then the corner
+			x_window_cursor_diff = start.x_root - attributes.x; 
+			y_window_cursor_diff = start.y_root - attributes.y;
+			
 			printf("start cursor pos: %d,%d\n",start.x_root, start.y_root);
-			printf("start window pos: %d, %d\n",attributes.x,attributes.y);
+			printf("start window pos: %d,%d\n",attributes.x,attributes.y);
 		//--------------- dragging the window ---------------
 		}else if (event.type == MotionNotify && start.subwindow != None && mouse_button == 1){
 			//printf("window moving\n");
-			x_window_cursor_diff = start.x_root - attributes.x; //so we drag the window from where we clicked it rather then the corner
-			y_window_cursor_diff = start.y_root - attributes.y;
-			printf("cursor (%d,%d)\n",event.xbutton.x_root,event.xbutton.y_root);
-			XMoveWindow(display, start.subwindow, start_cursor_x-x_window_cursor_diff, start_cursor_y-y_window_cursor_diff);
+			unsigned int new_x = clamp_min(event.xbutton.x-x_window_cursor_diff,0);
+			unsigned int new_y = clamp_min(event.xbutton.y-y_window_cursor_diff,0);
+			printf("moving win to (%u,%u)\n",new_x,new_y);
+			XMoveWindow(display, start.subwindow, new_x, new_y);
 		//-------------- resizing the window -----------------
 		}else if(event.type == MotionNotify && start.subwindow != None && mouse_button == 3){
 			unsigned int new_width = clamp_min(event.xbutton.x_root - start_window_x,1);

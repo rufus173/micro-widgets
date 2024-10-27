@@ -7,6 +7,7 @@ small utility widgets built with gtk4 and QT
 
 version > Qt5 and version > GTK4 are both required, as well as the tool qmake.
 The keybindr program also requires you be in group `input` to run
+`micro-manager` requires Xlib to run
 
 # Install
 
@@ -21,3 +22,4 @@ Widgets to choose from:
 - micro-taskbar (QT)
 - micro-runner (QT)
 - keybindr (compile with sudo)
+- micro-manager {it's a window manager for x} (Xlib)
