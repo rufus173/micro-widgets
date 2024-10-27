@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+static volatile short continue_running = 1;
 int clamp_min(int target, int min);
 int main(int argc, char **argv){
 	//setup some bits
@@ -19,7 +20,7 @@ int main(int argc, char **argv){
 
 	//binding keys
 	//grabbing windows                                         f1   + windows
-	XGrabKey(display,XKeysymToKeycode(display,XStringToKeysym("F1")),Mod4Mask, DefaultRootWindow(display), True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(display,XKeysymToKeycode(display,XStringToKeysym("m")),Mod4Mask, DefaultRootWindow(display), True, GrabModeAsync, GrabModeAsync);
 	//mouse
 	XGrabButton(display,
 		1, Mod4Mask, //left click + windows
@@ -44,15 +45,21 @@ int main(int argc, char **argv){
 	int start_window_x = 0;
 	int start_window_y = 0;
 	int mouse_button = 0;
-	for (;;){
+	for (;continue_running == 1;){
 		XNextEvent(display,&event); //load the next event into its struct
 
-		//raise window
-		if (event.type == KeyPress && event.xkey.subwindow != None){
-			XRaiseWindow(display, event.xkey.subwindow);
-		
+		//======================== keyboard events ===========================
+		if (event.type == KeyRelease){
+			int key = event.xkey.keycode;
+			if (key == XKeysymToKeycode(display,XStringToKeysym("m"))){
+				continue_running = 0;
+				printf("terminating...\n");
+				break;
+			}
+		}
+		//======================== mouse events ==============================
 		// --------------- start of click --------------
-		}else if (event.type == ButtonPress && event.xbutton.subwindow != None){
+		if (event.type == ButtonPress && event.xbutton.subwindow != None){
 			mouse_button = event.xbutton.button;
 			XGetWindowAttributes(display,event.xbutton.subwindow, &attributes);//get selected window's attributes
 			XRaiseWindow(display, event.xkey.subwindow);
