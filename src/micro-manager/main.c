@@ -66,6 +66,7 @@ int main(int argc, char **argv){
 			mouse_button = event.xbutton.button;
 			XGetWindowAttributes(display,event.xbutton.subwindow, &attributes);//get selected window's attributes
 			XRaiseWindow(display, event.xkey.subwindow);
+			XSetInputFocus(display,event.xbutton.subwindow,RevertToNone,CurrentTime);//set focus
 			start = event.xbutton;
 			printf("====== start of click event ======\n");
 			switch(mouse_button){
