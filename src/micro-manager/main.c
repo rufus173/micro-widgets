@@ -18,9 +18,9 @@ int main(int argc, char **argv){
 		return EXIT_FAILURE;
 	}
 
-	//binding keys
-	//grabbing windows                                         f1   + windows
+	//set up keybinds to capture
 	XGrabKey(display,XKeysymToKeycode(display,XStringToKeysym("m")),Mod4Mask, DefaultRootWindow(display), True, GrabModeAsync, GrabModeAsync);
+	XGrabKey(display,XKeysymToKeycode(display,XStringToKeysym("c")),Mod4Mask, DefaultRootWindow(display), True, GrabModeAsync, GrabModeAsync);
 	//mouse
 	XGrabButton(display,
 		1, Mod4Mask, //left click + windows
@@ -55,6 +55,9 @@ int main(int argc, char **argv){
 				continue_running = 0;
 				printf("terminating...\n");
 				break;
+			}else if(key == XKeysymToKeycode(display,XStringToKeysym("c"))){
+				printf("killing window\n");
+				XKillClient(display,event.xkey.subwindow);
 			}
 		}
 		//======================== mouse events ==============================
