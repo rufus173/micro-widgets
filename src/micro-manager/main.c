@@ -45,6 +45,8 @@ int main(int argc, char **argv){
 	int start_window_x = 0;
 	int start_window_y = 0;
 	int mouse_button = 0;
+	int start_window_width = 0;
+	int start_window_height = 0;
 	for (;continue_running == 1;){
 		XNextEvent(display,&event); //load the next event into its struct
 
@@ -78,9 +80,11 @@ int main(int argc, char **argv){
 				break;
 			}
 			start_cursor_x = start.x_root; start_cursor_y = start.y_root;
-			start_cursor_y = start.x_root; start_window_y = start.y_root;
+			start_cursor_y = start.y_root; start_window_y = start.y_root;
 			start_window_x = attributes.x;
 			start_window_y = attributes.y;
+			start_window_width = attributes.width;
+			start_window_height = attributes.height;
 
 			//so we drag the window from where we clicked it rather then the corner
 			x_window_cursor_diff = start.x_root - attributes.x; 
@@ -97,8 +101,8 @@ int main(int argc, char **argv){
 			XMoveWindow(display, start.subwindow, new_x, new_y);
 		//-------------- resizing the window -----------------
 		}else if(event.type == MotionNotify && start.subwindow != None && mouse_button == 3){
-			unsigned int new_width = clamp_min(event.xbutton.x_root - start_window_x,1);
-			unsigned int new_height = clamp_min(event.xbutton.y_root - start_window_y,1);
+			unsigned int new_width = clamp_min(start_window_width + event.xbutton.x - start_cursor_x,10);
+			unsigned int new_height = clamp_min(start_window_height + event.xbutton.y - start_cursor_y ,10);
 			printf("resize to %dx%d\n",new_width,new_height);
 			XResizeWindow(display, start.subwindow, new_width, new_height);
 			
