@@ -45,7 +45,7 @@ int activate(GtkApplication *app,gpointer user_data){
 }
 int main(int argc, char **argv){
 	GtkApplication *app;
-	app = gtk_application_new("com.github.rufus173.ShutdownMenu",G_APPLICATION_DEFAULT_FLAGS);
+	app = gtk_application_new("com.github.rufus173.ShutdownMenu",0);
 	g_signal_connect(app,"activate",G_CALLBACK(activate),NULL);
 	int status = g_application_run(G_APPLICATION(app),argc,argv);
 	g_object_unref(app);

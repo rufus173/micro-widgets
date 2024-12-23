@@ -54,7 +54,7 @@ int main(int argc, char **argv){
 	
 	//setup the gtk app
 	GtkApplication *app;
-	app = gtk_application_new("com.github.rufus173.DigitalClock",G_APPLICATION_DEFAULT_FLAGS);
+	app = gtk_application_new("com.github.rufus173.DigitalClock",0);
 	g_signal_connect(app,"activate",G_CALLBACK(create_window),NULL);
 	g_application_run(G_APPLICATION(app),argc,argv);
 	g_object_unref(app);

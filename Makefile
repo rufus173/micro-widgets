@@ -3,15 +3,15 @@ all : battery-display shutdown-menu digital-clock
 install : FORCE
 	@./install
 shutdown-menu : shutdown-menu.o
-	gcc shutdown-menu.o -o shutdown-menu `pkg-config --cflags --libs gtk4` 
+	gcc shutdown-menu.o -o shutdown-menu `pkg-config --libs gtk4` 
 shutdown-menu.o : src/shutdown-menu.c
-	gcc -c src/shutdown-menu.c `pkg-config --cflags --libs gtk4`
+	gcc -c `pkg-config --cflags gtk4` src/shutdown-menu.c
 battery-display : battery-display.o
-	gcc -o battery-display `pkg-config --cflags --libs gtk4` battery-display.o
+	gcc -o battery-display battery-display.o `pkg-config --libs gtk4`
 battery-display.o : src/battery-display.c
-	gcc -c `pkg-config --cflags --libs gtk4` src/battery-display.c
+	gcc -c `pkg-config --cflags gtk4` src/battery-display.c
 digital-clock : digital-clock.o
-	gcc -o digital-clock `pkg-config --cflags --libs gtk4` digital-clock.o
+	gcc digital-clock.o -o digital-clock `pkg-config --libs gtk4`
 digital-clock.o : src/digital-clock.c
 	gcc -c `pkg-config --cflags --libs gtk4` src/digital-clock.c
 quick-launcher : FORCE
