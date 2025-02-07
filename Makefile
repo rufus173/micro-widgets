@@ -24,4 +24,6 @@ keybindr : FORCE
 	make -C src/keybindr add-group-input ; cp -p src/keybindr/keybindr .
 micro-manager : FORCE
 	make -C src/micro-manager micro-manager ; cp src/micro-manager/micro-manager .
+micro-timer : FORCE
+	make -C src/micro-timer micro-timer ; cp src/micro-timer/micro-timer .
 FORCE:

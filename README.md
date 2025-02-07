@@ -23,3 +23,4 @@ Widgets to choose from:
 - micro-runner (QT)
 - keybindr (compile with sudo)
 - micro-manager {it's a window manager for x} (Xlib)
+- micro-timer (gtk)
