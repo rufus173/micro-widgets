@@ -6,6 +6,8 @@
 //======= struct defines =======
 struct timer_instance {
 	time_t start_time;
+	time_t end_time;
+	unsigned int timer_id;
 	GtkWidget *window;
 	GtkWidget *progress_bar;
 	GtkWidget *time_remaining_label;
@@ -23,6 +25,7 @@ GtkAdjustment *hours_adjustment;
 void activate(GtkApplication *app, gpointer user_data);
 void start_new_timer_callback();
 void cleanup_timer_callback(struct timer_instance *instance);
+gboolean update_timer(struct timer_instance *instance);
 int main(int argc, char **argv){
 	LIST_INIT(&timer_instances_head); //this is completely pointless btw just wanted to try it out
 	GtkApplication *app = gtk_application_new("com.github.rufus172.microTimer",0);
@@ -68,7 +71,13 @@ void activate(GtkApplication *app, gpointer user_data){
 }
 void cleanup_timer_callback(struct timer_instance *instance){
 	printf("timer done\n");
-	gtk_window_destroy(GTK_WINDOW(instance->window));
+
+	//stop the timer
+	g_source_remove(instance->timer_id);
+
+	gtk_window_destroy(GTK_WINDOW(instance->window)); //kill window
+
+	//clean up
 	LIST_REMOVE(instance,entries);
 	free(instance);
 }
@@ -77,11 +86,16 @@ void start_new_timer_callback(GtkApplication *app){
 	short minutes = gtk_adjustment_get_value(minutes_adjustment);
 	short seconds = gtk_adjustment_get_value(seconds_adjustment);
 	printf("new timer for %dh %dm %ds\n",hours,minutes,seconds);
+	time_t total_time_s = seconds + (minutes*60) + (hours*3600);
+
 	//prep struct
 	struct timer_instance *instance;
 	instance = malloc(sizeof(struct timer_instance));
 	//insert into doubly linked list so it can be retreived later
 	LIST_INSERT_HEAD(&timer_instances_head, instance,entries);
+	//set the start and end time
+	instance->start_time = time(NULL);
+	instance->end_time = time(NULL) + total_time_s;
 
 	//======== window creation ======
 	instance->window = gtk_window_new();
@@ -98,7 +112,26 @@ void start_new_timer_callback(GtkApplication *app){
 	gtk_box_append(GTK_BOX(box),instance->time_remaining_label);
 	gtk_box_append(GTK_BOX(box),instance->progress_bar);
 
+	//======== update timer =======
+	//                                  1s
+	instance->timer_id = g_timeout_add(1000,G_SOURCE_FUNC(update_timer),instance);
+
 	//======== present =======
 	gtk_window_set_child(GTK_WINDOW(instance->window),box);
 	gtk_window_present(GTK_WINDOW(instance->window));
+}
+gboolean update_timer(struct timer_instance *instance){
+	if (time(NULL) > instance->end_time){
+		//stop timer update loop
+		return G_SOURCE_REMOVE;
+	}
+	const time_t time_difference = instance->end_time - time(NULL);
+	
+	//======== update the progress bar and label =======
+	char label_text_buffer[1024];
+	strftime(label_text_buffer,sizeof(label_text_buffer),"time remaining: %Hh, %Mm, %Ss",gmtime(&time_difference));
+	gtk_label_set_text(GTK_LABEL(instance->time_remaining_label),label_text_buffer);
+
+	//keep going
+	return G_SOURCE_CONTINUE;
 }
