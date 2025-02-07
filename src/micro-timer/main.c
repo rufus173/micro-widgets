@@ -126,11 +126,13 @@ gboolean update_timer(struct timer_instance *instance){
 		return G_SOURCE_REMOVE;
 	}
 	const time_t time_difference = instance->end_time - time(NULL);
+	const float percent_complete = 1-((float)time_difference / (float)(instance->end_time-instance->start_time));
 	
 	//======== update the progress bar and label =======
 	char label_text_buffer[1024];
 	strftime(label_text_buffer,sizeof(label_text_buffer),"time remaining: %Hh, %Mm, %Ss",gmtime(&time_difference));
 	gtk_label_set_text(GTK_LABEL(instance->time_remaining_label),label_text_buffer);
+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(instance->progress_bar),percent_complete);
 
 	//keep going
 	return G_SOURCE_CONTINUE;
