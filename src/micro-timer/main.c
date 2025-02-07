@@ -7,6 +7,8 @@
 struct timer_instance {
 	time_t start_time;
 	GtkWidget *window;
+	GtkWidget *progress_bar;
+	GtkWidget *time_remaining_label;
 	LIST_ENTRY(timer_instance) entries;
 };
 
@@ -22,7 +24,7 @@ void activate(GtkApplication *app, gpointer user_data);
 void start_new_timer_callback();
 void cleanup_timer_callback(struct timer_instance *instance);
 int main(int argc, char **argv){
-	LIST_INIT(&timer_instances_head);
+	LIST_INIT(&timer_instances_head); //this is completely pointless btw just wanted to try it out
 	GtkApplication *app = gtk_application_new("com.github.rufus172.microTimer",0);
 	g_signal_connect(app,"activate",G_CALLBACK(activate), NULL);
 	int result = g_application_run(G_APPLICATION(app),argc,argv);
@@ -65,7 +67,7 @@ void activate(GtkApplication *app, gpointer user_data){
 	gtk_window_present(GTK_WINDOW(main_window));
 }
 void cleanup_timer_callback(struct timer_instance *instance){
-	printf("cleaning up\n");
+	printf("timer done\n");
 	gtk_window_destroy(GTK_WINDOW(instance->window));
 	LIST_REMOVE(instance,entries);
 	free(instance);
@@ -83,8 +85,20 @@ void start_new_timer_callback(GtkApplication *app){
 
 	//======== window creation ======
 	instance->window = gtk_window_new();
+	//gtk_window_set_default_size(GTK_WINDOW(instance->window),100,100);
 	//connect to cleanup function
 	g_signal_connect_swapped(instance->window,"close-request",G_CALLBACK(cleanup_timer_callback),instance);
 
+	//======== widgets ========
+	instance->progress_bar = gtk_progress_bar_new();
+	instance->time_remaining_label = gtk_label_new("time remaining: ");
+
+	//im not sure i should just be abandoning the pointer but whatever
+	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
+	gtk_box_append(GTK_BOX(box),instance->time_remaining_label);
+	gtk_box_append(GTK_BOX(box),instance->progress_bar);
+
+	//======== present =======
+	gtk_window_set_child(GTK_WINDOW(instance->window),box);
 	gtk_window_present(GTK_WINDOW(instance->window));
 }
