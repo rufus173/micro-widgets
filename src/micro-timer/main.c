@@ -8,6 +8,7 @@ struct timer_instance {
 	time_t start_time;
 	time_t end_time;
 	unsigned int timer_id;
+	char *name;
 	GtkWidget *window;
 	GtkWidget *progress_bar;
 	GtkWidget *time_remaining_label;
@@ -21,6 +22,7 @@ struct timer_instances_head timer_instances_head;
 GtkAdjustment *seconds_adjustment;
 GtkAdjustment *minutes_adjustment;
 GtkAdjustment *hours_adjustment;
+GtkWidget *timer_name_entry;
 
 void activate(GtkApplication *app, gpointer user_data);
 void start_new_timer_callback();
@@ -66,11 +68,20 @@ void activate(GtkApplication *app, gpointer user_data){
 	gtk_grid_attach(GTK_GRID(main_window_grid),minutes_box,1,3,1,1);
 	gtk_grid_attach(GTK_GRID(main_window_grid),hours_box,0,3,1,1);
 
+	//=========== timer naming ==========
+	GtkWidget *timer_name_entry_label = gtk_label_new("timer name");
+	timer_name_entry = gtk_entry_new();
+	gtk_grid_attach(GTK_GRID(main_window_grid),timer_name_entry_label,0,4,3,1);
+	gtk_grid_attach(GTK_GRID(main_window_grid),timer_name_entry,0,5,3,1);
+
 	//=========== presenting window ============
 	gtk_window_present(GTK_WINDOW(main_window));
 }
 void cleanup_timer_callback(struct timer_instance *instance){
 	printf("timer done\n");
+
+	//free some memory
+	free(instance->name);
 
 	//stop the timer
 	g_source_remove(instance->timer_id);
@@ -96,9 +107,25 @@ void start_new_timer_callback(GtkApplication *app){
 	//set the start and end time
 	instance->start_time = time(NULL);
 	instance->end_time = time(NULL) + total_time_s;
+	
+	//======== name ========
+	char *timer_name;
+	timer_name = strdup(
+		gtk_entry_buffer_get_text(
+			gtk_entry_get_buffer(
+				GTK_ENTRY(timer_name_entry)
+			)
+		)
+	);
+	if (strlen(timer_name) == 0){
+		free(timer_name);
+		timer_name = strdup("new timer");
+	}
+	instance->name = timer_name;
 
 	//======== window creation ======
 	instance->window = gtk_window_new();
+	gtk_window_set_title(GTK_WINDOW(instance->window),timer_name);
 	//gtk_window_set_default_size(GTK_WINDOW(instance->window),100,100);
 	//connect to cleanup function
 	g_signal_connect_swapped(instance->window,"close-request",G_CALLBACK(cleanup_timer_callback),instance);
