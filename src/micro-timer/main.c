@@ -11,6 +11,7 @@ struct timer_instance {
 	char *name;
 	GtkWidget *window;
 	GtkWidget *progress_bar;
+	GtkWidget *progress_bar_evil; //inverted
 	GtkWidget *time_remaining_label;
 	LIST_ENTRY(timer_instance) entries;
 };
@@ -132,12 +133,17 @@ void start_new_timer_callback(GtkApplication *app){
 
 	//======== widgets ========
 	instance->progress_bar = gtk_progress_bar_new();
+	gtk_progress_bar_set_text(GTK_PROGRESS_BAR(instance->progress_bar),"time passed vs timer remaining");
+	gtk_progress_bar_set_show_text(GTK_PROGRESS_BAR(instance->progress_bar),TRUE);
 	instance->time_remaining_label = gtk_label_new("time remaining: ");
+	instance->progress_bar_evil = gtk_progress_bar_new();
+	gtk_progress_bar_set_inverted(GTK_PROGRESS_BAR(instance->progress_bar_evil),TRUE);
 
 	//im not sure i should just be abandoning the pointer but whatever
 	GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL,0);
 	gtk_box_append(GTK_BOX(box),instance->time_remaining_label);
 	gtk_box_append(GTK_BOX(box),instance->progress_bar);
+	gtk_box_append(GTK_BOX(box),instance->progress_bar_evil);
 
 	//======== update timer =======
 	//                                  1s
@@ -160,6 +166,7 @@ gboolean update_timer(struct timer_instance *instance){
 	strftime(label_text_buffer,sizeof(label_text_buffer),"time remaining: %Hh, %Mm, %Ss",gmtime(&time_difference));
 	gtk_label_set_text(GTK_LABEL(instance->time_remaining_label),label_text_buffer);
 	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(instance->progress_bar),percent_complete);
+	gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(instance->progress_bar_evil),1-percent_complete);
 
 	//keep going
 	return G_SOURCE_CONTINUE;
