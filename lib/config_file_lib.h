@@ -6,7 +6,10 @@ struct cfl_key_value_pair {
 	char *value;
 };
 struct cfl_config_file_section {
-	char *lines;
+	char *name;
+	struct cfl_key_value_pair *key_value_pairs;
+	int key_value_pair_count;
+	struct cfl_config_file_section *next;
 };
 struct cfl_config_file {
 	char *location;
