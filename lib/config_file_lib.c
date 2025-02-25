@@ -3,6 +3,20 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+static void _print_config_file(CONFIG_FILE *config_file_data){
+	struct cfl_config_file_section *current_section;
+	current_section = config_file_data->sections_head;
+	for(;current_section != NULL;){
+		printf("=== new section [%s] ===\n",current_section->name);
+		for (int i = 0; i < current_section->key_value_pair_count; i++){
+			printf("[%s] = [%s]\n",
+				current_section->key_value_pairs[i].key,
+				current_section->key_value_pairs[i].value
+			);
+		}
+		current_section = current_section->next;	
+	}
+}
 static char *_read_line(FILE *file){
 	char *line = malloc(1);
 	size_t line_length = 0;
@@ -96,12 +110,45 @@ CONFIG_FILE *cfl_load_config_file(char *location){
 		if (formatted_line[0] == '#') goto cleanup;
 		if (formatted_line[0] == ';') goto cleanup;
 		
-		//start a new section if necessary
+		//====== process line ======
+		//new section
 		if (formatted_line[0] == '['){
-			current_section = malloc(sizeof(struct cfl_config_file_section));
-
+			//find ending tag (same code as before)
+			for (int i = 1; i < strlen(formatted_line); i++){
+				if (formatted_line[i] == ']'){
+					formatted_line[i] = '\0';
+					break;
+				}
+			}
+			current_section->next = malloc(sizeof(struct cfl_config_file_section));
+			current_section = current_section->next;
+			//initialise new section node
+			current_section->name = strdup(formatted_line+1);
+			current_section->next = NULL;
+			current_section->key_value_pairs = NULL;
+			current_section->key_value_pair_count = 0;
+		//key value pair
+		}else{
+			//resize array
+			current_section->key_value_pair_count++;
+			//im abreviating key value pair for my sanity
+			int kvp_count = current_section->key_value_pair_count;
+			current_section->key_value_pairs = realloc(current_section->key_value_pairs,kvp_count*sizeof(struct cfl_key_value_pair));
+			//extract key and value
+			char *key = formatted_line;
+			char *value = strchr(formatted_line,'=');
+			if (value == NULL){ //syntax error
+				free(formatted_line);
+				fclose(config_file);
+				cfl_free_config_file(config_file_data);
+				errno = EBADMSG;
+				return NULL;
+			}
+			value[0] = '\0';
+			value++;
+			current_section->key_value_pairs[kvp_count-1].key = strdup(key);
+			current_section->key_value_pairs[kvp_count-1].value = strdup(value);
 		}
-		printf("[%s]\n",formatted_line);
 
 		cleanup:
 		free(formatted_line);
@@ -114,7 +161,7 @@ CONFIG_FILE *cfl_load_config_file(char *location){
 		return NULL;
 	}
 
-
+	_print_config_file(config_file_data);
 	//====== return to user ======
 	return config_file_data;
 }
