@@ -161,7 +161,7 @@ CONFIG_FILE *cfl_load_config_file(char *location){
 		return NULL;
 	}
 
-	_print_config_file(config_file_data);
+	//_print_config_file(config_file_data);
 	//====== return to user ======
 	return config_file_data;
 }
@@ -182,4 +182,30 @@ int cfl_free_config_file(CONFIG_FILE *config_file_data){
 	}
 	//free the struct itself
 	free(config_file_data);
+}
+char *cfl_config_section_get_value(CONFIG_FILE *config_file_data, char *section,char *key){
+	//====== search for correct section ======
+	for (
+	struct cfl_config_file_section *current_section = config_file_data->sections_head;
+	current_section != NULL;
+	current_section = current_section->next)
+	{
+		//check if section name matches
+		if (strcmp(current_section->name,section) == 0){
+			//for each key value pair
+			for (int i = 0; i < current_section->key_value_pair_count; i++){
+				struct cfl_key_value_pair pair = current_section->key_value_pairs[i];
+				//found it
+				if (strcmp(pair.key,key) == 0){
+					return pair.value;
+				}
+			}
+			//key doesnt exist in said section
+			return NULL;
+		}else{
+			continue;
+		}
+	}
+	//failed to find section
+	return NULL;
 }

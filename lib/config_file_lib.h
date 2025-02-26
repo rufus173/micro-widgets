@@ -19,5 +19,6 @@ typedef struct cfl_config_file CONFIG_FILE;
 
 CONFIG_FILE *cfl_load_config_file(char *location);
 int cfl_free_config_file(CONFIG_FILE *config_file);
+char *cfl_config_section_get_value(CONFIG_FILE *config_file,char *section,char *key);
 
 #endif
