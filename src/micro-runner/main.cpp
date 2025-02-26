@@ -18,6 +18,7 @@
 #include "debug.h"
 extern "C" {
 #include "tray.h"
+#include "applications.h"
 }
 
 //definitions
@@ -36,6 +37,8 @@ void move_window_step(QTimer *move_loop,QWidget *window);
 void enter_pressed(QLineEdit *entry, QWidget *window);
 
 int main(int argc, char **argv){
+	//load .desktop files
+	get_all_applications();
 	//gui
 	build_gui(argc,argv);//causes exit() to hang
 	// ---------------------------- command execution ----------------------
