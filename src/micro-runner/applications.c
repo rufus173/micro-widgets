@@ -83,6 +83,12 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 			return -1;
 		}
 
+		char *file_extention = strrchr(dir_entry->d_name,'.');
+		if (file_extention == NULL){
+			file_extention = "";
+		}
+		//printf("[%s]",file_extention);
+
 		//is directory
 		if (S_ISDIR(path_stats.st_mode) && (strcmp(dir_entry->d_name,".") != 0) && (strcmp(dir_entry->d_name,"..") != 0)){ //check its not '.' or '..'
 			
@@ -90,8 +96,9 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 			printf("searching subdir %s\n",full_file_path);
 			_applications_load_from_dir(applications_list_head,full_file_path);
 		}
-		//is file
-		else if(S_ISREG(path_stats.st_mode)){
+		//is file (and .desktop extention)
+		else if(S_ISREG(path_stats.st_mode) && (strcmp(file_extention,".desktop") == 0)){
+			//printf("reading config %s\n",full_file_path);
 			//====== generate an entry for said file ======
 			struct application *app = malloc(sizeof(struct application));
 			memset(app,0,sizeof(struct application));
