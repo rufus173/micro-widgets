@@ -6,6 +6,7 @@ small utility widgets built with gtk4 and QT
 # Requirements
 
 version > Qt5 and version > GTK4 are both required, as well as the tool qmake.
+On Ubuntu, install `qtbase5-dev qt6-base-dev qt5-qmake`
 The keybindr program also requires you be in group `input` to run
 `micro-manager` requires Xlib to run
 
