@@ -106,51 +106,58 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 		else if(S_ISREG(path_stats.st_mode) && (strcmp(file_extention,".desktop") == 0)){
 			//printf("reading config %s\n",full_file_path);
 			//====== generate an entry for said file ======
-			struct application *app = malloc(sizeof(struct application));
-			memset(app,0,sizeof(struct application));
 			CONFIG_FILE *config = cfl_load_config_file(full_file_path);
 			if (config == NULL){
 				printf("config file [%s]",full_file_path);
 				perror("cfl_load_config_file");
 			}
-			
-			//==== fill in values ====
-			//name
-			char *name = cfl_config_section_get_value(config,"Desktop Entry","Name");
-			if (name == NULL){
-				app->name = strdup("");
-			}else{
-				app->name = strdup(name);
-			}
+			char *no_display = cfl_config_section_get_value(config,"Desktop Entry","NoDisplay");
 
-			//comment
-			char *comment = cfl_config_section_get_value(config,"Desktop Entry","Comment");
-			if (comment == NULL){
-				app->comment = strdup("");
-			}else{
-				app->comment = strdup(comment);
-			}
+			//check if it should be displayed and ignore if it shouldnt
+			if (no_display == NULL || strcmp(no_display,"true") != 0){
 
-			//exec
-			char *exec = cfl_config_section_get_value(config,"Desktop Entry","Exec");
-			if (exec == NULL){
-				app->exec = strdup("");
-			}else{
-				app->exec = strdup(exec);
-			}
+				struct application *app = malloc(sizeof(struct application));
+				memset(app,0,sizeof(struct application));
+				
+				//==== fill in values ====
+				//name
+				char *name = cfl_config_section_get_value(config,"Desktop Entry","Name");
+				if (name == NULL){
+					app->name = strdup("");
+				}else{
+					app->name = strdup(name);
+				}
 
-			//terminal
-			char *terminal = cfl_config_section_get_value(config,"Desktop Entry","Name");
-			if (terminal == NULL){
-				app->terminal = 0;
-			}else{
-				app->terminal = (strcmp("true",terminal) == 0);
-			}
+				//comment
+				char *comment = cfl_config_section_get_value(config,"Desktop Entry","Comment");
+				if (comment == NULL){
+					app->comment = strdup("");
+				}else{
+					app->comment = strdup(comment);
+				}
 
+				//exec
+				char *exec = cfl_config_section_get_value(config,"Desktop Entry","Exec");
+				if (exec == NULL){
+					app->exec = strdup("");
+				}else{
+					app->exec = strdup(exec);
+				}
+
+				//terminal
+				char *terminal = cfl_config_section_get_value(config,"Desktop Entry","Name");
+				if (terminal == NULL){
+					app->terminal = 0;
+				}else{
+					app->terminal = (strcmp("true",terminal) == 0);
+				}
+
+
+				//insert
+				LIST_INSERT_HEAD(applications_list_head,app,next); //O(1) rather then going to the end of the list
+			}
+			//close the config file
 			cfl_free_config_file(config);
-
-			//insert
-			LIST_INSERT_HEAD(applications_list_head,app,next); //O(1) rather then going to the end of the list
 		}
 
 		//if its not either do nothing (except free memory)
@@ -159,6 +166,17 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 
 	closedir(dir);
 	return return_val;
+}
+static void _print_applications(struct applications_head *applications){
+	for (
+		struct application *current_application = LIST_FIRST(applications);
+		current_application != NULL;
+		current_application = LIST_NEXT(current_application,next)
+	){
+		printf("====== %s ======\n",current_application->name);
+		printf("exec = %s\n",current_application->exec);
+		printf("terminal = %d\n",current_application->terminal);
+	}
 }
 struct applications_head *get_all_applications(){
 	//reverse order priority (priority with duplicate names)
@@ -192,6 +210,7 @@ struct applications_head *get_all_applications(){
 	return applications_list_head;
 }
 void free_applications(struct applications_head *applications_list_head){
+	_print_applications(applications_list_head);
 	//do nothing if we are given null
 	if (applications_list_head == NULL) return;
 
