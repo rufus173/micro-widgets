@@ -210,7 +210,7 @@ struct applications_head *get_all_applications(){
 	return applications_list_head;
 }
 void free_applications(struct applications_head *applications_list_head){
-	_print_applications(applications_list_head);
+	//_print_applications(applications_list_head);
 	//do nothing if we are given null
 	if (applications_list_head == NULL) return;
 
@@ -224,4 +224,23 @@ void free_applications(struct applications_head *applications_list_head){
 		current_application = next_application;
 	}
 	free(applications_list_head);
+}
+size_t get_matching_applications(struct applications_head *app_list_head, struct application *app_buffer,size_t app_buffer_len,char *name ,int flags){
+	size_t current_buffer_len = 0;
+	//====== linear search ======
+	for (
+		struct application *current_app = LIST_FIRST(app_list_head);
+		current_app != NULL;
+		current_app = LIST_NEXT(current_app,next)
+	){
+		//stop if the buffer is full
+		if (current_buffer_len >= app_buffer_len) break;
+
+		if (strncasecmp(current_app->name,name,strlen(name)) == 0){
+			//found ; append it to the buffer
+			memcpy(app_buffer+current_buffer_len,current_app,sizeof(struct application));
+			current_buffer_len++;
+		}
+	}
+	return current_buffer_len;
 }
