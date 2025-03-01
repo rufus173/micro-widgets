@@ -59,10 +59,13 @@ static char *_env_substitute(const char *str){
 	return expanded_str;
 }
 static int _applications_load_from_dir(struct applications_head *applications_list_head,char *directory_location){
+	int return_val = 0;
 	//====== open the directory ======
 	DIR *dir = opendir(directory_location);
 	if (dir == NULL){
 		//skip if error occurs
+		fprintf(stderr,"opendir on [%s]\n",directory_location);
+		perror("opendir");
 		return -1;
 	}
 
@@ -94,7 +97,10 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 			
 			//hurrah for recursion (add all the files in the new dir)
 			printf("searching subdir %s\n",full_file_path);
-			_applications_load_from_dir(applications_list_head,full_file_path);
+			int result = _applications_load_from_dir(applications_list_head,full_file_path);
+			if (result < 0){
+				return_val = -1;
+			}
 		}
 		//is file (and .desktop extention)
 		else if(S_ISREG(path_stats.st_mode) && (strcmp(file_extention,".desktop") == 0)){
@@ -103,6 +109,10 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 			struct application *app = malloc(sizeof(struct application));
 			memset(app,0,sizeof(struct application));
 			CONFIG_FILE *config = cfl_load_config_file(full_file_path);
+			if (config == NULL){
+				printf("config file [%s]",full_file_path);
+				perror("cfl_load_config_file");
+			}
 			
 			//==== fill in values ====
 			//name
@@ -131,7 +141,7 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 
 			//terminal
 			char *terminal = cfl_config_section_get_value(config,"Desktop Entry","Name");
-			if (name == NULL){
+			if (terminal == NULL){
 				app->terminal = 0;
 			}else{
 				app->terminal = (strcmp("true",terminal) == 0);
@@ -148,7 +158,7 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 	}
 
 	closedir(dir);
-	return 0;
+	return return_val;
 }
 struct applications_head *get_all_applications(){
 	//reverse order priority (priority with duplicate names)
@@ -170,12 +180,16 @@ struct applications_head *get_all_applications(){
 	for (int i = 0; i < desktop_entry_path_count; i++){
 		char *directory_location = _env_substitute(desktop_entry_paths[i]);
 		printf("loading applications from %s\n",directory_location);
-		_applications_load_from_dir(applications_list_head,directory_location);
+		int result = _applications_load_from_dir(applications_list_head,directory_location);
+		if (result < 0){
+			fprintf(stderr,"some config files may not have loaded correctly\n");
+			perror("_applications_load_from_dir");
+		}
 		free(directory_location);
 	}
 	//CONFIG_FILE *desktop_file = cfl_load_config_file();
 	//cfl_free_config_file(desktop_file);
-	return NULL;
+	return applications_list_head;
 }
 void free_applications(struct applications_head *applications_list_head){
 	//do nothing if we are given null
