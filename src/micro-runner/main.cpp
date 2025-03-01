@@ -28,6 +28,7 @@ extern "C" {
 }
 
 //definitions
+#define APPLICATION_HINT_COUNT 3
 #define WINDOW_HEIGHT 120
 #define ENTRY_WIDTH 400
 #define HINTS_WIDTH 300
@@ -41,7 +42,7 @@ char *entered_text = NULL;
 struct applications_head *app_list_head;
 
 void enter_pressed(QLineEdit *entry, QWidget *window);
-void text_edited(QLineEdit *entry,QStandardItemModel *hints_list_model);
+void text_edited(QLineEdit *entry,QStandardItem **hints_item_list);
 
 int main(int argc, char **argv){
 	//====== load .desktop files ======
@@ -83,6 +84,15 @@ int main(int argc, char **argv){
 	hints_list->setModel(hints_list_model);
 	hints_list->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
 	hints_list->setResizeMode(QListView::Adjust);
+	QStandardItem *hints_item_list[APPLICATION_HINT_COUNT];
+	for (int i = 0; i < APPLICATION_HINT_COUNT; i++){
+		//memory handled by the QStandardModel
+		QStandardItem *item = new QStandardItem();
+		item->setSelectable(false);
+		item->setEditable(false);
+		hints_item_list[i] = item;
+		hints_list_model->setItem(i,0,item);
+	}
 
 	widget_grid->addWidget(hints_list,0);
 	//hints_list->setGeometry(0,0,);
@@ -90,7 +100,7 @@ int main(int argc, char **argv){
 	//link enter key to respective function
 	QObject::connect(entry,&QLineEdit::returnPressed,[=]{enter_pressed(entry,main_window);});
 	//link editing the text to updating the hints list
-	QObject::connect(entry,&QLineEdit::textEdited,[=]{text_edited(entry,hints_list_model);});
+	QObject::connect(entry,&QLineEdit::textEdited,[=]{text_edited(entry,(QStandardItem**)hints_item_list);});
 
 	//display everything
 	debug << "running app.\n";
@@ -121,6 +131,31 @@ void enter_pressed(QLineEdit *entry, QWidget *window){
 	}
 	window->close();
 }
-void text_edited(QLineEdit *entry,QStandardItemModel *hints_list_model){
-	//printf("text changed\n");
+void text_edited(QLineEdit *entry,QStandardItem **hints_item_list){
+	//====== extract current text from entry ======
+	QByteArray byte_array = entry->text().toLatin1();
+	entered_text = (char*)malloc(sizeof(char)*(byte_array.size()+1));
+	strncpy(entered_text,byte_array.data(),byte_array.size()+1);
+
+	//====== perform lookup ======
+	struct application app_buffer[APPLICATION_HINT_COUNT];
+	size_t app_buffer_length = APPLICATION_HINT_COUNT;
+	
+	//skip if the entered text is empty
+	if (strlen(entered_text) == 0) app_buffer_length = 0;
+
+	app_buffer_length = get_matching_applications(app_list_head,app_buffer,app_buffer_length,entered_text,0);
+	size_t i;
+	for (i = 0; i < app_buffer_length; i++){
+		//printf("%s\n",app_buffer[i].name);
+		hints_item_list[i]->setText(app_buffer[i].name);
+		hints_item_list[i]->setEnabled(true);
+	}
+	for (; i < APPLICATION_HINT_COUNT; i++){
+		hints_item_list[i]->setText("");
+		hints_item_list[i]->setEnabled(false);
+	}
+
+	//====== cleanup ======
+	free(entered_text);
 }
