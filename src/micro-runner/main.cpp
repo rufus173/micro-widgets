@@ -13,6 +13,7 @@
 #include <QScreen>
 #include <QGridLayout>
 #include <QWidget>
+#include <QStandardItemModel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QScreen>
@@ -27,9 +28,9 @@ extern "C" {
 }
 
 //definitions
-#define WINDOW_HEIGHT 100
-#define ENTRY_WIDTH 200
-#define HINTS_WIDTH 200
+#define WINDOW_HEIGHT 120
+#define ENTRY_WIDTH 400
+#define HINTS_WIDTH 300
 #define WINDOW_WIDTH ENTRY_WIDTH + HINTS_WIDTH
 
 //globals
@@ -37,14 +38,14 @@ int active_display_height;
 int active_display_width;
 int left_x_when_centred;
 char *entered_text = NULL;
+struct applications_head *app_list_head;
 
-void move_window_step(QTimer *move_loop,QWidget *window);
 void enter_pressed(QLineEdit *entry, QWidget *window);
+void text_edited(QLineEdit *entry,QStandardItemModel *hints_list_model);
 
 int main(int argc, char **argv){
 	//====== load .desktop files ======
-	struct applications_head *applications_list_head = get_all_applications();
-	free_applications(applications_list_head);
+	app_list_head = get_all_applications();
 
 	//====== gui ======
 	debug_class debug = debug_class("main");
@@ -62,6 +63,7 @@ int main(int argc, char **argv){
 	//setup window
 	QWidget *main_window = new QWidget();
 	main_window->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+	main_window->setFixedSize(WINDOW_WIDTH,WINDOW_HEIGHT);
 
 	//hit the grid(dy) 
 	QBoxLayout *widget_grid = new QBoxLayout(QBoxLayout::LeftToRight,main_window);
@@ -72,18 +74,23 @@ int main(int argc, char **argv){
 	entry->setTextMargins(10,0,10,0);//left top right bottom
 	//make it able to expand verticaly
 	entry->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
-	widget_grid->addWidget(entry,1);
+	widget_grid->addWidget(entry,0);
 
-	//suggestions list
-	QListWidget *suggestions_list = new QListWidget();
-	suggestions_list->addItem("hi");
-	suggestions_list->addItem("bye");
-	suggestions_list->addItem(":)");
-	widget_grid->addWidget(suggestions_list,1);
-	//suggestions_list->setGeometry(0,0,);
+	//hints list
+	QListView *hints_list = new QListView();
+	QStandardItemModel *hints_list_model;
+	hints_list_model = new QStandardItemModel(3,1);
+	hints_list->setModel(hints_list_model);
+	hints_list->setSizePolicy(QSizePolicy::Fixed,QSizePolicy::Fixed);
+	hints_list->setResizeMode(QListView::Adjust);
+
+	widget_grid->addWidget(hints_list,0);
+	//hints_list->setGeometry(0,0,);
 
 	//link enter key to respective function
 	QObject::connect(entry,&QLineEdit::returnPressed,[=]{enter_pressed(entry,main_window);});
+	//link editing the text to updating the hints list
+	QObject::connect(entry,&QLineEdit::textEdited,[=]{text_edited(entry,hints_list_model);});
 
 	//display everything
 	debug << "running app.\n";
@@ -92,7 +99,11 @@ int main(int argc, char **argv){
 	
 	//destroy everything
 	delete main_window;
+	delete hints_list_model;
 	delete active_display;
+
+	//====== unload .desktop files ======
+	free_applications(app_list_head);
 
 	if (window_return != 0){
 		debug < "window failed";
@@ -109,4 +120,7 @@ void enter_pressed(QLineEdit *entry, QWidget *window){
 		entered_text = NULL;
 	}
 	window->close();
+}
+void text_edited(QLineEdit *entry,QStandardItemModel *hints_list_model){
+	//printf("text changed\n");
 }
