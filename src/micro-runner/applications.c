@@ -255,24 +255,24 @@ int run_command(struct applications_head *app_list_head,char *command){
 	//====== extract app details ======
 	struct application app_buffer[1];
 	size_t app_buffer_len = 1;
-	char *extracted_app_name = command;
+	char *extracted_app_name = strdup(command);
 	app_buffer_len = get_matching_applications(app_list_head,app_buffer,app_buffer_len,extracted_app_name,0);
 	char *command_to_run;
 	if (app_buffer_len != 0){
 		//====== app name was found ======
-		command_to_run = strdup(app_buffer[0].exec);
+		extracted_app_name = strdup(app_buffer[0].exec);
 		//filter out percent substitutions e.g. %U %F %d because i dont want to deal with them
-		for (size_t i = 0; i < strlen(command_to_run); i++){
-			if (command_to_run[i] == '%'){
-				command_to_run[i] = ' ';
-				if (isalpha(command_to_run[i+1])) command_to_run[i+1] = ' ';
+		for (size_t i = 0; i < strlen(extracted_app_name); i++){
+			if (extracted_app_name[i] == '%'){
+				extracted_app_name[i] = ' ';
+				if (isalpha(extracted_app_name[i+1])) extracted_app_name[i+1] = ' ';
 			}
 		}
 		//====== launch in a terminal if required ======
 		if (app_buffer[0].terminal == 1){
-			size_t command_to_run_size = strlen(command_to_run)+strlen(PREFERED_TERMINAL)+1+1;
-			command_to_run = realloc(command_to_run,command_to_run_size);
-			snprintf(command_to_run,command_to_run_size,"%s %s",PREFERED_TERMINAL,app_buffer[0].exec);
+			size_t command_to_run_size = strlen(extracted_app_name)+strlen(PREFERED_TERMINAL)+1+1;
+			command_to_run = malloc(command_to_run_size);
+			snprintf(command_to_run,command_to_run_size,"%s %s",PREFERED_TERMINAL,extracted_app_name);
 		}
 	}else{
 		//====== app name was not found ======
@@ -280,6 +280,7 @@ int run_command(struct applications_head *app_list_head,char *command){
 	}
 	int result = system(command_to_run);
 	free(command_to_run);
+	free(extracted_app_name);
 	return result;
 }
 void app_list_insertion_sort(struct applications_head *app_list_head){
