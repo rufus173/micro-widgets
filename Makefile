@@ -1,4 +1,4 @@
-all : battery-display shutdown-menu digital-clock
+all : battery-display shutdown-menu digital-clock quick-launcher micro-taskbar keybindr micro-runner micro-manager micro-timer
 	@echo "All widgets compiled"
 install : FORCE
 	@./install
