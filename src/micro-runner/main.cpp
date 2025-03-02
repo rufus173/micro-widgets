@@ -112,6 +112,9 @@ int main(int argc, char **argv){
 	delete hints_list_model;
 	delete active_display;
 
+	//====== run command ======
+	if (entered_text != NULL) run_command(app_list_head,entered_text);
+
 	//====== unload .desktop files ======
 	free_applications(app_list_head);
 
