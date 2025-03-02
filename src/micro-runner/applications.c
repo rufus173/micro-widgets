@@ -273,6 +273,8 @@ int run_command(struct applications_head *app_list_head,char *command){
 			size_t command_to_run_size = strlen(extracted_app_name)+strlen(PREFERED_TERMINAL)+1+1;
 			command_to_run = malloc(command_to_run_size);
 			snprintf(command_to_run,command_to_run_size,"%s %s",PREFERED_TERMINAL,extracted_app_name);
+		}else{
+			command_to_run = strdup(extracted_app_name);
 		}
 	}else{
 		//====== app name was not found ======
