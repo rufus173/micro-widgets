@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include "config_file_lib.h"
 
+#define PREFERED_TERMINAL "kitty"
+
 //may break in the future but as of now it is NOT IMPLEMENTED FOR SOME REASON
 //#define	LIST_PREV(elm, field)		*((elm)->field.le_prev)
 
@@ -149,7 +151,7 @@ static int _applications_load_from_dir(struct applications_head *applications_li
 				}
 
 				//terminal
-				char *terminal = cfl_config_section_get_value(config,"Desktop Entry","Name");
+				char *terminal = cfl_config_section_get_value(config,"Desktop Entry","Terminal");
 				if (terminal == NULL){
 					app->terminal = 0;
 				}else{
@@ -258,12 +260,27 @@ int run_command(struct applications_head *app_list_head,char *command){
 	char *command_to_run;
 	if (app_buffer_len != 0){
 		//====== app name was found ======
-		command_to_run = app_buffer[0].exec;
+		command_to_run = strdup(app_buffer[0].exec);
+		//filter out percent substitutions e.g. %U %F %d because i dont want to deal with them
+		for (size_t i = 0; i < strlen(command_to_run); i++){
+			if (command_to_run[i] == '%'){
+				command_to_run[i] = ' ';
+				if (isalpha(command_to_run[i+1])) command_to_run[i+1] = ' ';
+			}
+		}
+		//====== launch in a terminal if required ======
+		if (app_buffer[0].terminal == 1){
+			size_t command_to_run_size = strlen(command_to_run)+strlen(PREFERED_TERMINAL)+1+1;
+			command_to_run = realloc(command_to_run,command_to_run_size);
+			snprintf(command_to_run,command_to_run_size,"%s %s",PREFERED_TERMINAL,app_buffer[0].exec);
+		}
 	}else{
 		//====== app name was not found ======
-		command_to_run = command;
+		command_to_run = strdup(command);
 	}
-	return system(command_to_run);
+	int result = system(command_to_run);
+	free(command_to_run);
+	return result;
 }
 void app_list_insertion_sort(struct applications_head *app_list_head){
 	for (
