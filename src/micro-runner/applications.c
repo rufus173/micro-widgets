@@ -8,6 +8,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include "config_file_lib.h"
+
+//may break in the future but as of now it is NOT IMPLEMENTED FOR SOME REASON
+//#define	LIST_PREV(elm, field)		*((elm)->field.le_prev)
+
 static char *_env_substitute(const char *str){
 	//====== prepare stuff for later ======
 	char *expanded_str = malloc(1);
@@ -245,6 +249,7 @@ size_t get_matching_applications(struct applications_head *app_list_head, struct
 	return current_buffer_len;
 }
 int run_command(struct applications_head *app_list_head,char *command){
+	printf("processing command [%s]\n",command);
 	//====== extract app details ======
 	struct application app_buffer[1];
 	size_t app_buffer_len = 1;
@@ -259,4 +264,29 @@ int run_command(struct applications_head *app_list_head,char *command){
 		command_to_run = command;
 	}
 	return system(command_to_run);
+}
+void app_list_insertion_sort(struct applications_head *app_list_head){
+	for (
+		struct application *current_app = LIST_FIRST(app_list_head);
+		current_app != NULL;
+	){
+		//we need this to move to the next node
+		struct application *next_app = LIST_NEXT(current_app,next);
+
+		for (
+			struct application *app_to_compare = LIST_FIRST(app_list_head);
+			app_to_compare != current_app;
+			app_to_compare = LIST_NEXT(app_to_compare,next)
+		){
+			if ((app_to_compare == NULL) || (strcmp(app_to_compare->name,current_app->name) > 0)){
+				//====== delete from old position and re insert ======
+				LIST_REMOVE(current_app,next);
+				LIST_INSERT_BEFORE(app_to_compare,current_app,next);
+				break;
+			}
+		}
+		
+		//====== move to the next node ======
+		current_app = next_app;
+	}
 }

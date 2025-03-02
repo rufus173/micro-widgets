@@ -49,6 +49,8 @@ void text_edited(QLineEdit *entry,QStandardItem **hints_item_list);
 int main(int argc, char **argv){
 	//====== load .desktop files ======
 	app_list_head = get_all_applications();
+	//so that the hints are in alphabetical order
+	app_list_insertion_sort(app_list_head);
 
 	//====== gui ======
 	debug_class debug = debug_class("main");
