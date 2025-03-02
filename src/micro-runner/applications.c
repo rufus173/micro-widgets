@@ -244,3 +244,19 @@ size_t get_matching_applications(struct applications_head *app_list_head, struct
 	}
 	return current_buffer_len;
 }
+int run_command(struct applications_head *app_list_head,char *command){
+	//====== extract app details ======
+	struct application app_buffer[1];
+	size_t app_buffer_len = 1;
+	char *extracted_app_name = command;
+	app_buffer_len = get_matching_applications(app_list_head,app_buffer,app_buffer_len,extracted_app_name,0);
+	char *command_to_run;
+	if (app_buffer_len != 0){
+		//====== app name was found ======
+		command_to_run = app_buffer[0].exec;
+	}else{
+		//====== app name was not found ======
+		command_to_run = command;
+	}
+	return system(command_to_run);
+}
