@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <QFont>
 #include <unistd.h>
 #include <wait.h>
 #include <sys/types.h>
@@ -10,6 +11,7 @@
 #include <QSizePolicy>
 #include <QLabel>
 #include <QWindow>
+#include <QGraphicsOpacityEffect>
 #include <QScreen>
 #include <QGridLayout>
 #include <QWidget>
@@ -28,8 +30,8 @@ extern "C" {
 }
 
 //definitions
-#define APPLICATION_HINT_COUNT 3
-#define WINDOW_HEIGHT 120
+#define APPLICATION_HINT_COUNT 4
+#define WINDOW_HEIGHT 140
 #define ENTRY_WIDTH 400
 #define HINTS_WIDTH 300
 #define WINDOW_WIDTH ENTRY_WIDTH + HINTS_WIDTH
@@ -52,6 +54,12 @@ int main(int argc, char **argv){
 	debug_class debug = debug_class("main");
 	// ---------------------- GUI --------------------
 	debug << "starting";
+	//transparency effect
+	QGraphicsOpacityEffect *hints_transparency_effect = new QGraphicsOpacityEffect();
+	hints_transparency_effect->setOpacity(0.9);
+	QGraphicsOpacityEffect *entry_transparency_effect = new QGraphicsOpacityEffect();
+	entry_transparency_effect->setOpacity(0.9);
+
 	//create the app
 	QApplication app = QApplication(argc,argv);
 
@@ -65,6 +73,7 @@ int main(int argc, char **argv){
 	QWidget *main_window = new QWidget();
 	main_window->setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
 	main_window->setFixedSize(WINDOW_WIDTH,WINDOW_HEIGHT);
+	main_window->setAttribute(Qt::WA_TranslucentBackground);
 
 	//hit the grid(dy) 
 	QBoxLayout *widget_grid = new QBoxLayout(QBoxLayout::LeftToRight,main_window);
@@ -72,13 +81,19 @@ int main(int argc, char **argv){
 
 	//entry box
 	QLineEdit *entry = new QLineEdit();
-	entry->setTextMargins(10,0,10,0);//left top right bottom
+	entry->setTextMargins(30,0,30,0);//left top right bottom
+	//double font size
+	QFont entry_font = entry->font();
+	entry_font.setPointSize(entry_font.pointSize()*2);
+	entry->setFont(entry_font);
 	//make it able to expand verticaly
 	entry->setSizePolicy(QSizePolicy::MinimumExpanding,QSizePolicy::MinimumExpanding);
+	entry->setGraphicsEffect(entry_transparency_effect);
 	widget_grid->addWidget(entry,0);
 
 	//hints list
 	QListView *hints_list = new QListView();
+	hints_list->setGraphicsEffect(hints_transparency_effect);
 	QStandardItemModel *hints_list_model;
 	hints_list_model = new QStandardItemModel(3,1);
 	hints_list->setModel(hints_list_model);
@@ -110,6 +125,8 @@ int main(int argc, char **argv){
 	//destroy everything
 	delete main_window;
 	delete hints_list_model;
+	//delete hints_transparency_effect;
+	//delete entry_transparency_effect;
 	delete active_display;
 
 	//====== run command ======
