@@ -20,9 +20,11 @@
 #include <QListWidget>
 #include <QScreen>
 #include <QTimer>
+#include <QKeyEvent>
 
 
 //mine
+#include "main.h"
 #include "debug.h"
 extern "C" {
 #include "tray.h"
@@ -30,7 +32,7 @@ extern "C" {
 }
 
 //definitions
-#define APPLICATION_HINT_COUNT 4
+#define APPLICATION_HINT_COUNT 8
 #define WINDOW_HEIGHT 140
 #define ENTRY_WIDTH 400
 #define HINTS_WIDTH 300
@@ -45,6 +47,25 @@ struct applications_head *app_list_head;
 
 void enter_pressed(QLineEdit *entry, QWidget *window);
 void text_edited(QLineEdit *entry,QStandardItem **hints_item_list);
+
+bool CustomLineEdit::event(QEvent *event){
+	if (event->type() == QEvent::KeyPress){
+		//casting tomfoolery
+		QKeyEvent *key_event = static_cast<QKeyEvent *>(event);
+		if (key_event->key() == Qt::Key_Escape){
+			printf("escaperlicious\n");
+			emit escapePressed();
+			//signify we have taken care of the signal
+			return true;
+		}else{
+			//let some other handler deal with this
+			return QWidget::event(event);
+		}
+		return true;
+	}
+	//let the signal pass through if we dont care about it
+	return QWidget::event(event);
+}
 
 int main(int argc, char **argv){
 	//====== load .desktop files ======
@@ -82,8 +103,10 @@ int main(int argc, char **argv){
 	//widget_grid->setGeometry(0,0,ENTRY_WIDTH,WINDOW_HEIGHT);
 
 	//entry box
-	QLineEdit *entry = new QLineEdit();
+	CustomLineEdit *entry = new CustomLineEdit();
 	entry->setTextMargins(30,0,30,0);//left top right bottom
+	QObject::connect(entry,&CustomLineEdit::escapePressed,&app,QApplication::closeAllWindows);
+
 	//double font size
 	QFont entry_font = entry->font();
 	entry_font.setPointSize(entry_font.pointSize()*2);
