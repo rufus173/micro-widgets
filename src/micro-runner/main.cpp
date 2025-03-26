@@ -46,6 +46,7 @@ char *entered_text = NULL;
 struct applications_head *app_list_head;
 
 void enter_pressed(QLineEdit *entry, QWidget *window);
+void esc_pressed(QWidget *window);
 void text_edited(QLineEdit *entry,QStandardItem **hints_item_list);
 
 bool CustomLineEdit::event(QEvent *event){
@@ -84,7 +85,7 @@ int main(int argc, char **argv){
 	entry_transparency_effect->setOpacity(0.9);
 
 	//create the app
-	QApplication app = QApplication(argc,argv);
+	QApplication *app = new QApplication(argc,argv);
 
 	//get info about the screen
 	QScreen *active_display = QGuiApplication::primaryScreen();
@@ -105,7 +106,6 @@ int main(int argc, char **argv){
 	//entry box
 	CustomLineEdit *entry = new CustomLineEdit();
 	entry->setTextMargins(30,0,30,0);//left top right bottom
-	QObject::connect(entry,&CustomLineEdit::escapePressed,&app,QApplication::closeAllWindows);
 
 	//double font size
 	QFont entry_font = entry->font();
@@ -142,17 +142,22 @@ int main(int argc, char **argv){
 	//link editing the text to updating the hints list
 	QObject::connect(entry,&QLineEdit::textEdited,[=]{text_edited(entry,(QStandardItem**)hints_item_list);});
 
+	//link pressing esc to quitting the app
+	QObject::connect(entry,&CustomLineEdit::escapePressed,[=]{esc_pressed(main_window);});
+
 	//display everything
 	debug << "running app.\n";
 	main_window->show();
-	int window_return = app.exec();
+	int window_return = app->exec();
 	
+	/* every time i get a segmentation fault here i comment a line out and it starts working again. im sure this is optimal programming right here */
 	//destroy everything
+	delete app;
 	delete main_window;
 	delete hints_list_model;
 	//delete hints_transparency_effect;
 	//delete entry_transparency_effect;
-	delete active_display;
+	//delete active_display;
 
 	//====== run command ======
 	if (entered_text != NULL) run_command(app_list_head,entered_text);
@@ -165,6 +170,12 @@ int main(int argc, char **argv){
 		return window_return;
 	}
 	return 0;
+}
+void esc_pressed(QWidget *window){
+	printf("quitting\n");
+	free(entered_text);
+	entered_text = NULL;
+	window->close();
 }
 void enter_pressed(QLineEdit *entry, QWidget *window){
 	if (entry->text().isEmpty() != true){
