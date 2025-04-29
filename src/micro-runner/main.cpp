@@ -238,4 +238,5 @@ void text_edited(QLineEdit *entry,QStandardItem **hints_item_list){
 
 	//====== cleanup ======
 	free(entered_text);
+	entered_text = NULL;
 }
