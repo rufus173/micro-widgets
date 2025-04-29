@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/prctl.h>
 #include <setjmp.h>
+#include <wordexp.h>
 
 //QT
 #include <QApplication>
@@ -21,6 +22,7 @@
 #include <QScreen>
 #include <QTimer>
 #include <QKeyEvent>
+#include <QDebug>
 
 
 //mine
@@ -69,6 +71,7 @@ bool CustomLineEdit::event(QEvent *event){
 }
 
 int main(int argc, char **argv){
+
 	//====== load .desktop files ======
 	app_list_head = get_all_applications();
 	//so that the hints are in alphabetical order
@@ -76,6 +79,30 @@ int main(int argc, char **argv){
 
 	//====== gui ======
 	debug_class debug = debug_class("main");
+	//create the app
+	QApplication *app = new QApplication(argc,argv);
+
+	//throught the power of borrowing code I have written before, behold:
+	//====== load a custom style sheet if the user has one ======
+	wordexp_t expanded_expression;
+	if (int result = wordexp("~/.config/micro-runner/style.css",&expanded_expression,0) == 0){
+		for (size_t i = 0; i < expanded_expression.we_wordc; i++){
+			qDebug() << "checking" << QString(expanded_expression.we_wordv[i]);
+			QFile stylesheet_file = QFile(expanded_expression.we_wordv[i]);
+			if (stylesheet_file.exists()){
+				stylesheet_file.open(QFile::ReadOnly);
+				QString stylesheet = QLatin1String(stylesheet_file.readAll());
+				app->setStyleSheet(stylesheet);
+				stylesheet_file.close();
+				qDebug() << "using stylesheet" << QString(expanded_expression.we_wordv[i]);
+				break;
+			}
+		}
+		wordfree(&expanded_expression);
+	}else{
+		qDebug() << "wordexp error:" << result;
+	}
+	//end of borrowing
 	// ---------------------- GUI --------------------
 	debug << "starting";
 	//transparency effect
@@ -83,9 +110,6 @@ int main(int argc, char **argv){
 	hints_transparency_effect->setOpacity(0.9);
 	QGraphicsOpacityEffect *entry_transparency_effect = new QGraphicsOpacityEffect();
 	entry_transparency_effect->setOpacity(0.9);
-
-	//create the app
-	QApplication *app = new QApplication(argc,argv);
 
 	//get info about the screen
 	QScreen *active_display = QGuiApplication::primaryScreen();
