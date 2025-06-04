@@ -2,17 +2,20 @@ use glib::clone;
 use gtk4::glib;
 use gtk4::prelude::*;
 use std::path::Path;
-use gtk4::gdk_pixbuf::Pixbuf;
+use gdk4;
+use gio;
 
 pub struct Images {
-	pixbufs: Vec<gtk4::gdk_pixbuf::Pixbuf>,
+	textures: Vec<gdk4::Texture>,
 	image_names: Vec<String>,
+	current_image: usize,
 }
 impl Images {
 	fn new(files: Vec<String>) -> Option<Images>{
 		let mut images = Images {
-			pixbufs: Vec::new(),
-			image_names: files.clone(),
+			textures: Vec::new(),
+			image_names: Vec::new(),
+			current_image: 0,
 		};
 		for file in files{
 			println!("{}",file);
@@ -21,21 +24,53 @@ impl Images {
 				println!("Error: {} does not exist",file);
 				continue;
 			}
-			images.pixbufs.push(match Pixbuf::from_file(&file){
+			let gfile = gio::File::for_path(&file);
+			images.textures.push(match gdk4::Texture::from_file(&gfile){
 				Err(e) => {println!("{}",e); continue;},
 				Ok(pixbuf) => pixbuf,
 			});
+			images.image_names.push(file);
 		}
 		Some(images)
 	}
+	fn next_image(&mut self) -> Result<(),&str>{
+		if self.current_image >= self.textures.len(){
+			return Err("image out of range");
+		}
+		self.current_image += 1;
+		Ok(())
+	}
+	fn previous_image(&mut self) -> Result<(),&str>{
+		if self.current_image < 1{
+			return Err("image out of range");
+		}
+		self.current_image -= 1;
+		Ok(())
+	}
+	fn get_texture(&self) -> Option<&gdk4::Texture>{
+		if self.textures.len() == 0{
+			return None;
+		}
+		Some(&self.textures[self.current_image])
+	}
+	fn get_image_name(&self) -> Option<String>{
+		if self.textures.len() == 0{
+			return None;
+		}
+		Some(self.image_names[self.current_image].clone())
+	}
 }
 
-fn main() {
+fn main(){
+	if std::env::args().collect::<Vec<String>>().len() < 2{
+		println!("Please provide at least one file");
+		return;
+	}
 	let app = gtk4::Application::builder()
 		.application_id("com.github.rufus173.dsply")
 		.build();
 	app.connect_activate(on_activate);
-	app.run();
+	app.run_with_args(&Vec::<String>::new());
 }
 /*
 artist's rendition of the finished product
@@ -68,7 +103,10 @@ artist's rendition of the finished product
 fn on_activate(application: &gtk4::Application){
 	//====== load the images ======
 	let file_list: Vec<String> = std::env::args().collect();
-	let images = Images::new(file_list[1..].to_vec());
+	let images = match Images::new(file_list[1..].to_vec()){
+		Some(images) => images,
+		None => panic!("Could not initialise images"),
+	};
 	//====== build the gui ======
 	let window = gtk4::ApplicationWindow::builder()
 		.application(application)
@@ -86,11 +124,12 @@ fn on_activate(application: &gtk4::Application){
 	);
 	grid.attach(&close_button,1,0,1,1);
 	//--- image name/path label ---
-	let image_name_label = gtk4::Label::new(Some("/a/b/img.png"));
+	let image_name_label = gtk4::Label::new(images.get_image_name().as_deref());
 	grid.attach(&image_name_label,0,0,1,1);
 	//--- image display ---
-	let image_display = gtk4::Image::new();
-	grid.attach(&image_display,0,0,1,3);
+	let image_display = gtk4::Picture::new();
+	image_display.set_paintable(images.get_texture());
+	grid.attach(&image_display,0,0,1,4);
 	//--- previous button ---
 	let previous_button = gtk4::Button::with_label("Previous");
 	grid.attach(&previous_button,1,1,1,1);
