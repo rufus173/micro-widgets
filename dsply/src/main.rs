@@ -3,11 +3,11 @@ use gtk4::glib;
 use gtk4::prelude::*;
 use std::path::Path;
 use gdk4;
-use gio;
-use std::rc::Rc;
+use gtk4::gio;
 
+#[derive(glib::Variant)]
 pub struct Images {
-	textures: Vec<gdk4::Texture>,
+	textures: Vec<&gdk4::Texture>,
 	image_names: Vec<String>,
 	current_image: usize,
 }
@@ -104,13 +104,15 @@ artist's rendition of the finished product
 fn on_activate(application: &gtk4::Application){
 	//====== load the images ======
 	let file_list: Vec<String> = std::env::args().collect();
-	let mut images = match Images::new(file_list[1..].to_vec()){
+	let images = match Images::new(file_list[1..].to_vec()){
 		Some(images) => images,
 		None => panic!("Could not initialise images"),
 	};
 	//====== actions ======
-	let action_next = ActionEntry::builder()
-		.activate(
+	let action_change_image = gio::ActionEntry::builder("change image")
+		.state(images.to_variant())
+		.activate(move |_, action, parameter|{
+		}
 		);
 	//====== build the gui ======
 	let window = gtk4::ApplicationWindow::builder()
@@ -129,11 +131,11 @@ fn on_activate(application: &gtk4::Application){
 	);
 	grid.attach(&close_button,1,0,1,1);
 	//--- image name/path label ---
-	let image_name_label = gtk4::Label::new(images_weak.upgrade().unwrap().get_image_name().as_deref());
+	let image_name_label = gtk4::Label::new(images.get_image_name().as_deref());
 	grid.attach(&image_name_label,0,0,1,1);
 	//--- image display ---
 	let image_display = gtk4::Picture::new();
-	image_display.set_paintable(images_weak.upgrade().unwrap().get_texture());
+	image_display.set_paintable(images.get_texture());
 	grid.attach(&image_display,0,0,1,4);
 	//--- info panel ---
 	let info_panel = gtk4::Label::new(Some("size\nother\ndate of creation"));
