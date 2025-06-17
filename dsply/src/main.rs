@@ -112,6 +112,7 @@ fn on_activate(application: &gtk4::Application){
 		.parameter_type(Some(&i32::static_variant_type()))
 		.state(current_image.to_variant())
 		.activate(move |_, action, parameter|{
+			//------ extract variables from action ------
 			let parameter = parameter
 				.expect("Could not fetch parameter")
 				.get::<i32>()
@@ -124,6 +125,9 @@ fn on_activate(application: &gtk4::Application){
 			
 			current_image += parameter;
 			if current_image >= 0 && current_image < (file_list.len() as i32){
+				//------ update the widgets ------
+				image_name_label.set_text(file_list[current_image as usize].as_str());
+				image_display.set_paintable(texture_from_filename(file_list[current_image as usize].clone()).as_ref());
 				println!("{}",current_image);
 				action.set_state(&current_image.to_variant())
 			}
