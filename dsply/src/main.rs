@@ -5,13 +5,14 @@ use std::path::Path;
 use gdk4;
 use gtk4::gio;
 use std::process::ExitCode;
+use gdk_pixbuf::Pixbuf;
 
 fn texture_from_filename(file: String) -> Option<gdk4::Texture>{
-	let gfile = gio::File::for_path(&file);
-	match gdk4::Texture::from_file(&gfile){
-		Err(e) => panic!("{}",e),
-		Ok(pixbuf) => Some(pixbuf),
-	}
+	let pixbuf = match Pixbuf::from_file_at_scale(&file,400,400,true) {
+		Ok(res) => res,
+		Err(err) => panic!("error loading {}: {}",&file,err)
+	};
+	Some(gdk4::Texture::for_pixbuf(&pixbuf))
 }
 
 fn main() -> ExitCode {
@@ -82,20 +83,23 @@ fn on_activate(application: &gtk4::Application){
 			window.close();
 		})
 	);
-	grid.attach(&close_button,1,0,1,1);
+	grid.attach(&close_button,1,1,1,1);
 	//--- image name/path label ---
 	let image_name_label = gtk4::Label::new(Some(file_list[0].as_str()));
-	grid.attach(&image_name_label,0,0,1,1);
+	grid.attach(&image_name_label,0,0,2,1);
 	//--- image display ---
 	let image_display = gtk4::Picture::new();
+	image_display.set_content_fit(gtk4::ContentFit::ScaleDown);
+	image_display.set_hexpand(false);
+	image_display.set_vexpand(false);
 	image_display.set_paintable(texture_from_filename(file_list[0].clone()).as_ref());
-	grid.attach(&image_display,0,0,1,4);
+	grid.attach(&image_display,0,1,1,4);
 	//--- info panel ---
 	let info_panel = gtk4::Label::new(Some("size\nother\ndate of creation"));
-	grid.attach(&info_panel,1,3,1,1);
+	grid.attach(&info_panel,1,4,1,1);
 	//--- previous button ---
 	let previous_button = gtk4::Button::with_label("Previous");
-	grid.attach(&previous_button,1,1,1,1);
+	grid.attach(&previous_button,1,3,1,1);
 	previous_button.connect_clicked(move |previous_button|{
 		let parameter = -1;
 		previous_button.activate_action("win.change-image",Some(&parameter.to_variant())).expect("action does not exist");
@@ -112,7 +116,7 @@ fn on_activate(application: &gtk4::Application){
 		.parameter_type(Some(&i32::static_variant_type()))
 		.state(current_image.to_variant())
 		.activate(move |_, action, parameter|{
-			//------ extract variables from action ------
+			//--- extract variables from action ---
 			let parameter = parameter
 				.expect("Could not fetch parameter")
 				.get::<i32>()
