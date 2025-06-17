@@ -4,74 +4,36 @@ use gtk4::prelude::*;
 use std::path::Path;
 use gdk4;
 use gtk4::gio;
+use std::process::ExitCode;
 
-#[derive(glib::Variant)]
-pub struct Images {
-	textures: Vec<&gdk4::Texture>,
-	image_names: Vec<String>,
-	current_image: usize,
-}
-impl Images {
-	fn new(files: Vec<String>) -> Option<Images>{
-		let mut images = Images {
-			textures: Vec::new(),
-			image_names: Vec::new(),
-			current_image: 0,
-		};
-		for file in files{
-			println!("{}",file);
-			let path = Path::new(&file);
-			if !path.exists(){
-				println!("Error: {} does not exist",file);
-				continue;
-			}
-			let gfile = gio::File::for_path(&file);
-			images.textures.push(match gdk4::Texture::from_file(&gfile){
-				Err(e) => {println!("{}",e); continue;},
-				Ok(pixbuf) => pixbuf,
-			});
-			images.image_names.push(file);
-		}
-		Some(images)
-	}
-	fn next_image(&mut self) -> Result<(),&str>{
-		if self.current_image >= self.textures.len(){
-			return Err("image out of range");
-		}
-		self.current_image += 1;
-		Ok(())
-	}
-	fn previous_image(&mut self) -> Result<(),&str>{
-		if self.current_image < 1{
-			return Err("image out of range");
-		}
-		self.current_image -= 1;
-		Ok(())
-	}
-	fn get_texture(&self) -> Option<&gdk4::Texture>{
-		if self.textures.len() == 0{
-			return None;
-		}
-		Some(&self.textures[self.current_image])
-	}
-	fn get_image_name(&self) -> Option<String>{
-		if self.textures.len() == 0{
-			return None;
-		}
-		Some(self.image_names[self.current_image].clone())
+fn texture_from_filename(file: String) -> Option<gdk4::Texture>{
+	let gfile = gio::File::for_path(&file);
+	match gdk4::Texture::from_file(&gfile){
+		Err(e) => panic!("{}",e),
+		Ok(pixbuf) => Some(pixbuf),
 	}
 }
 
-fn main(){
-	if std::env::args().collect::<Vec<String>>().len() < 2{
+fn main() -> ExitCode {
+	let files = std::env::args().collect::<Vec<String>>()[1..].to_vec();
+	if files.len() < 1{
 		println!("Please provide at least one file");
-		return;
+		return ExitCode::from(99);
+	}
+	for file in files{
+		println!("{}",file);
+		let path = Path::new(&file);
+		if !path.exists(){
+			println!("Error: {} does not exist",file);
+			return ExitCode::from(2);
+		}
 	}
 	let app = gtk4::Application::builder()
 		.application_id("com.github.rufus173.dsply")
 		.build();
 	app.connect_activate(on_activate);
 	app.run_with_args(&Vec::<String>::new());
+	ExitCode::from(0)
 }
 /*
 artist's rendition of the finished product
@@ -103,17 +65,8 @@ artist's rendition of the finished product
 
 fn on_activate(application: &gtk4::Application){
 	//====== load the images ======
-	let file_list: Vec<String> = std::env::args().collect();
-	let images = match Images::new(file_list[1..].to_vec()){
-		Some(images) => images,
-		None => panic!("Could not initialise images"),
-	};
-	//====== actions ======
-	let action_change_image = gio::ActionEntry::builder("change image")
-		.state(images.to_variant())
-		.activate(move |_, action, parameter|{
-		}
-		);
+	let file_list = std::env::args().collect::<Vec<String>>()[1..].to_vec();
+	let current_image: i32 = 0;
 	//====== build the gui ======
 	let window = gtk4::ApplicationWindow::builder()
 		.application(application)
@@ -131,11 +84,11 @@ fn on_activate(application: &gtk4::Application){
 	);
 	grid.attach(&close_button,1,0,1,1);
 	//--- image name/path label ---
-	let image_name_label = gtk4::Label::new(images.get_image_name().as_deref());
+	let image_name_label = gtk4::Label::new(Some(file_list[0].as_str()));
 	grid.attach(&image_name_label,0,0,1,1);
 	//--- image display ---
 	let image_display = gtk4::Picture::new();
-	image_display.set_paintable(images.get_texture());
+	image_display.set_paintable(texture_from_filename(file_list[0].clone()).as_ref());
 	grid.attach(&image_display,0,0,1,4);
 	//--- info panel ---
 	let info_panel = gtk4::Label::new(Some("size\nother\ndate of creation"));
@@ -143,8 +96,39 @@ fn on_activate(application: &gtk4::Application){
 	//--- previous button ---
 	let previous_button = gtk4::Button::with_label("Previous");
 	grid.attach(&previous_button,1,1,1,1);
+	previous_button.connect_clicked(move |previous_button|{
+		let parameter = -1;
+		previous_button.activate_action("win.change-image",Some(&parameter.to_variant())).expect("action does not exist");
+	});
 	//--- next button ---
 	let next_button = gtk4::Button::with_label("Next");
 	grid.attach(&next_button,1,2,1,1);
+	next_button.connect_clicked(move |next_button|{
+		let parameter = 1;
+		next_button.activate_action("win.change-image",Some(&parameter.to_variant())).expect("action does not exist");
+	});
+	//====== actions ======
+	let action_change_image = gio::ActionEntry::builder("change-image")
+		.parameter_type(Some(&i32::static_variant_type()))
+		.state(current_image.to_variant())
+		.activate(move |_, action, parameter|{
+			let parameter = parameter
+				.expect("Could not fetch parameter")
+				.get::<i32>()
+				.expect("variant not of type u32");
+			let mut current_image = action
+				.state()
+				.expect("could not get state")
+				.get::<i32>()
+				.expect("variant not of type i32");
+			
+			current_image += parameter;
+			if current_image >= 0 && current_image < (file_list.len() as i32){
+				println!("{}",current_image);
+				action.set_state(&current_image.to_variant())
+			}
+		})
+		.build();
+	window.add_action_entries([action_change_image]);
 	window.present();
 }
