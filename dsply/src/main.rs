@@ -123,6 +123,7 @@ fn on_activate(application: &gtk4::Application){
 	grid.attach(&image_display,0,1,1,4);
 	//--- info panel ---
 	let info_panel = gtk4::Label::new(file_info_string(file_list[0].clone()).as_deref());
+	info_panel.set_vexpand(true);
 	grid.attach(&info_panel,1,4,1,1);
 	//--- previous button ---
 	let previous_button = gtk4::Button::with_label("Previous");
