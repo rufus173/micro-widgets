@@ -1,4 +1,5 @@
 use glib::clone;
+use chrono::{DateTime,Local};
 use gtk4::glib;
 use gtk4::prelude::*;
 use std::path::Path;
@@ -10,9 +11,30 @@ use gdk_pixbuf::Pixbuf;
 fn texture_from_filename(file: String) -> Option<gdk4::Texture>{
 	let pixbuf = match Pixbuf::from_file_at_scale(&file,400,400,true) {
 		Ok(res) => res,
-		Err(err) => panic!("error loading {}: {}",&file,err)
+		Err(err) => {println!("error loading {}: {}",&file,err);return None;}
 	};
 	Some(gdk4::Texture::for_pixbuf(&pixbuf))
+}
+fn file_info_string(file: String) -> Option<String>{
+	//--- load the file to get size ---
+	let pixbuf = match Pixbuf::from_file(&file) {
+		Ok(res) => res,
+		Err(err) => {println!("error loading {}: {}",&file,err);return None;}
+	};
+	let width = pixbuf.width();
+	let height = pixbuf.height();
+	//--- create path ---
+	let file_path = Path::new(&file);
+	let metadata = file_path.metadata();
+	let creation_date_str = match metadata {
+		Ok(data) => match data.created() {
+			Ok(date) => format!("{}",date.clone().into() as DateTime<Local>),
+			Err(error) => "Unknown creation"
+		},
+		Err(e) => "Unknown creation"
+	};
+	//--- construct string ---
+	Some(format!("{}x{}\n{}\n{}",width,height,creation_date_str,"None"))
 }
 
 fn main() -> ExitCode {
@@ -95,7 +117,7 @@ fn on_activate(application: &gtk4::Application){
 	image_display.set_paintable(texture_from_filename(file_list[0].clone()).as_ref());
 	grid.attach(&image_display,0,1,1,4);
 	//--- info panel ---
-	let info_panel = gtk4::Label::new(Some("size\nother\ndate of creation"));
+	let info_panel = gtk4::Label::new(file_info_string(file_list[0].clone()).as_deref());
 	grid.attach(&info_panel,1,4,1,1);
 	//--- previous button ---
 	let previous_button = gtk4::Button::with_label("Previous");
@@ -133,6 +155,10 @@ fn on_activate(application: &gtk4::Application){
 				image_name_label.set_text(file_list[current_image as usize].as_str());
 				image_display.set_paintable(texture_from_filename(file_list[current_image as usize].clone()).as_ref());
 				println!("{}",current_image);
+				match file_info_string(file_list[current_image as usize].clone()).as_deref(){
+					Some(info) => info_panel.set_text(info),
+					None => info_panel.set_text("")
+				};
 				action.set_state(&current_image.to_variant())
 			}
 		})
