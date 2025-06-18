@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+byte-unit = "5.1.6"
+chrono = "0.4.41"
 gdk-pixbuf = "0.20.10"
 gdk4 = "0.9.6"
 gtk4 = { version = "0.9.6", features = ["v4_8"] }

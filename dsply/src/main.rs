@@ -7,9 +7,10 @@ use gdk4;
 use gtk4::gio;
 use std::process::ExitCode;
 use gdk_pixbuf::Pixbuf;
+use byte_unit::{Byte,UnitType};
 
 fn texture_from_filename(file: String) -> Option<gdk4::Texture>{
-	let pixbuf = match Pixbuf::from_file_at_scale(&file,400,400,true) {
+	let pixbuf = match Pixbuf::from_file_at_scale(&file,500,500,true) {
 		Ok(res) => res,
 		Err(err) => {println!("error loading {}: {}",&file,err);return None;}
 	};
@@ -25,16 +26,20 @@ fn file_info_string(file: String) -> Option<String>{
 	let height = pixbuf.height();
 	//--- create path ---
 	let file_path = Path::new(&file);
-	let metadata = file_path.metadata();
-	let creation_date_str = match metadata {
+	let creation_date_str = match file_path.metadata() {
 		Ok(data) => match data.created() {
-			Ok(date) => format!("{}",date.clone().into() as DateTime<Local>),
-			Err(error) => "Unknown creation"
+			Ok(date) => format!("{}",DateTime::<Local>::from(date.clone()).format("%d/%m/%y %H:%M")),
+			Err(_) => "Unknown creation".to_string()
 		},
-		Err(e) => "Unknown creation"
+		Err(_) => "Unknown creation".to_string()
 	};
+	//--- get length ---
+	let size = Byte::from_u64(match file_path.metadata() {
+			Ok(metadata) => metadata.len(),
+			Err(_) => 0
+		}).get_appropriate_unit(UnitType::Binary);
 	//--- construct string ---
-	Some(format!("{}x{}\n{}\n{}",width,height,creation_date_str,"None"))
+	Some(format!("{}x{}\n{}\n{size:.1}",width,height,creation_date_str))
 }
 
 fn main() -> ExitCode {
@@ -154,7 +159,7 @@ fn on_activate(application: &gtk4::Application){
 				//------ update the widgets ------
 				image_name_label.set_text(file_list[current_image as usize].as_str());
 				image_display.set_paintable(texture_from_filename(file_list[current_image as usize].clone()).as_ref());
-				println!("{}",current_image);
+				println!("displaying {}",file_list[current_image as usize]);
 				match file_info_string(file_list[current_image as usize].clone()).as_deref(){
 					Some(info) => info_panel.set_text(info),
 					None => info_panel.set_text("")
