@@ -38,8 +38,10 @@ fn file_info_string(file: String) -> Option<String>{
 			Ok(metadata) => metadata.len(),
 			Err(_) => 0
 		}).get_appropriate_unit(UnitType::Binary);
+	//--- get the total number of images ---
+	let total_images = std::env::args().collect::<Vec<String>>().len() -1;
 	//--- construct string ---
-	Some(format!("{}x{}\n{}\n{size:.1}",width,height,creation_date_str))
+	Some(format!("{}x{}\n{}\n{size:.1}\n{} images",width,height,creation_date_str,total_images))
 }
 
 fn main() -> ExitCode {
@@ -172,14 +174,15 @@ fn on_activate(application: &gtk4::Application){
 	//====== keybindings ======
 	let event_controller = gtk4::EventControllerKey::new();
 	event_controller.connect_key_pressed(clone!(#[strong] window, move |_,key,_,_|{
-		println!("key {} pressed",key);
+		//println!("key {} pressed",key);
 		match key.name() {
 			Some(name) => match name.as_str() {
-				"Left" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(-1).to_variant())).expect("action does not exist");println!("left key pressed")},
-				"Right" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(1).to_variant())).expect("action does not exist");println!("right key pressed")},
+				"Left" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(-1).to_variant())).expect("action does not exist")},
+				"Right" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(1).to_variant())).expect("action does not exist")},
+				"Escape" => window.close(),
 				_ => ()
 			}
-			None => println!("unknown key pressed")
+			None => ()//println!("unknown key pressed")
 		}
 		glib::Propagation::Proceed
 	}));
