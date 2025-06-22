@@ -9,6 +9,7 @@ version > Qt5 and version > GTK4 are both required, as well as the tool qmake.
 On Ubuntu, install `qtbase5-dev qt6-base-dev qt5-qmake`
 The keybindr program also requires you be in group `input` to run
 `micro-manager` requires Xlib to run
+`dsply` requires cargo
 
 # Install
 
@@ -25,3 +26,4 @@ Widgets to choose from:
 - keybindr (compile with sudo)
 - micro-manager {it's a window manager for x} (Xlib)
 - micro-timer (gtk)
+- dsply (gtk-rs)
