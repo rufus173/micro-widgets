@@ -1,4 +1,4 @@
-all : battery-display shutdown-menu digital-clock quick-launcher micro-taskbar keybindr micro-runner micro-manager micro-timer
+all : battery-display shutdown-menu digital-clock quick-launcher micro-taskbar keybindr micro-runner micro-manager micro-timer dsply
 	@echo "All widgets compiled"
 install : FORCE
 	@./install
@@ -26,4 +26,6 @@ micro-manager : FORCE
 	make -C src/micro-manager micro-manager ; cp src/micro-manager/micro-manager .
 micro-timer : FORCE
 	make -C src/micro-timer micro-timer ; cp src/micro-timer/micro-timer .
+dsply : FORCE
+	cargo build --manifest-path dsply/Cargo.toml --target-dir dsply --release
 FORCE:
