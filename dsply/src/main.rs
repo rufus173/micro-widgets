@@ -169,6 +169,22 @@ fn on_activate(application: &gtk4::Application){
 			}
 		})
 		.build();
+	//====== keybindings ======
+	let event_controller = gtk4::EventControllerKey::new();
+	event_controller.connect_key_pressed(clone!(#[strong] window, move |_,key,_,_|{
+		println!("key {} pressed",key);
+		match key.name() {
+			Some(name) => match name.as_str() {
+				"Left" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(-1).to_variant())).expect("action does not exist");println!("left key pressed")},
+				"Right" => {gtk4::prelude::WidgetExt::activate_action(&window,"win.change-image",Some(&(1).to_variant())).expect("action does not exist");println!("right key pressed")},
+				_ => ()
+			}
+			None => println!("unknown key pressed")
+		}
+		glib::Propagation::Proceed
+	}));
+	//====== final setup ======
+	window.add_controller(event_controller);
 	window.add_action_entries([action_change_image]);
 	window.present();
 }
