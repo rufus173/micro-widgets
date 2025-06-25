@@ -8,7 +8,7 @@ echo "Searching for compiled binaries..."
 bin_install() {
 	ls | while read file
 	do
-		if echo "$(file "$file")" | grep -qi "executable" ; then
+		if echo "$(file "$file")" | grep -qi "executable" | grep -qi "ELF"; then
 			echo "Installing $file..."
 			cp -p "$file" /usr/bin
 			echo "Done"
